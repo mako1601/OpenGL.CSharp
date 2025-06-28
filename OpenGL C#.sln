@@ -1,0 +1,60 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "1 Color", "1 Color\Color.csproj", "{1C47969E-73A1-2730-C551-27028C9FF74D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "2 Line", "2 Line\Line.csproj", "{06719587-E9C1-1031-3610-0E07A324B366}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "3 Texture", "3 Texture\Texture.csproj", "{2290CFFB-BBEC-AE41-D282-2426EF1C4238}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "4 Basic Lighting", "4 Basic Lighting\Basic Lighting.csproj", "{B08A0627-5EAD-8D83-CBC3-783E1F1D8A98}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "5 Advanced Lighting", "5 Advanced Lighting\Advanced Lighting.csproj", "{4CF2B76E-094E-F9A4-2F3E-16E1C73221C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "6 Normal Mapping", "6 Normal Mapping\Normal Mapping.csproj", "{37C86DCE-3FB4-ABE2-4534-001B60BF9720}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Engine", "Engine\Engine.csproj", "{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1C47969E-73A1-2730-C551-27028C9FF74D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C47969E-73A1-2730-C551-27028C9FF74D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C47969E-73A1-2730-C551-27028C9FF74D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C47969E-73A1-2730-C551-27028C9FF74D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06719587-E9C1-1031-3610-0E07A324B366}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06719587-E9C1-1031-3610-0E07A324B366}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06719587-E9C1-1031-3610-0E07A324B366}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06719587-E9C1-1031-3610-0E07A324B366}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2290CFFB-BBEC-AE41-D282-2426EF1C4238}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2290CFFB-BBEC-AE41-D282-2426EF1C4238}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2290CFFB-BBEC-AE41-D282-2426EF1C4238}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2290CFFB-BBEC-AE41-D282-2426EF1C4238}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B08A0627-5EAD-8D83-CBC3-783E1F1D8A98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B08A0627-5EAD-8D83-CBC3-783E1F1D8A98}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B08A0627-5EAD-8D83-CBC3-783E1F1D8A98}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B08A0627-5EAD-8D83-CBC3-783E1F1D8A98}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4CF2B76E-094E-F9A4-2F3E-16E1C73221C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4CF2B76E-094E-F9A4-2F3E-16E1C73221C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4CF2B76E-094E-F9A4-2F3E-16E1C73221C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4CF2B76E-094E-F9A4-2F3E-16E1C73221C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37C86DCE-3FB4-ABE2-4534-001B60BF9720}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37C86DCE-3FB4-ABE2-4534-001B60BF9720}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37C86DCE-3FB4-ABE2-4534-001B60BF9720}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37C86DCE-3FB4-ABE2-4534-001B60BF9720}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {622C81F7-968E-44AB-A35F-13392B2FDC7C}
+	EndGlobalSection
+EndGlobal
