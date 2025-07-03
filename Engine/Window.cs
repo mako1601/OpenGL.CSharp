@@ -8,19 +8,22 @@ namespace Engine;
 
 public class Window
 {
-    protected GL GL { get; set; }
-    protected IWindow WindowState { get; set; }
-    protected IInputContext InputContext { get; set; }
-    protected IKeyboard KeyboardState { get; set; }
-    protected IMouse MouseState { get; set; }
-    protected Camera Camera { get; set; }
     protected bool _isClosing = false;
-    protected Vector2 WindowCenter
-    {
-        get => new(WindowState.Size.X / 2f, WindowState.Size.Y / 2f);
-    }
-    protected bool IsFocused { get; set; }
     private bool _shouldClose = false;
+    private int _frameCount;
+    private double _fps;
+    private double _elapsedTime;
+    private readonly double _updateInterval = 0.5d;
+
+    protected GL GL { get; private set; }
+    protected IWindow WindowState { get; private set; }
+    protected IInputContext InputContext { get; private set; }
+    protected IKeyboard KeyboardState { get; private set; }
+    protected IMouse MouseState { get; private set; }
+    protected Camera Camera { get; set; }
+    protected Vector2 WindowCenter => new(WindowState.Size.X / 2f, WindowState.Size.Y / 2f);
+    protected bool IsFocused { get; private set; }
+    public double FPS => _fps;
 
     public Window()
     {
@@ -101,8 +104,6 @@ public class Window
             return;
         }
 
-        var io = ImGuiNET.ImGui.GetIO();
-
         Vector3 direction = Vector3.Zero;
 
         if (KeyboardState.IsKeyPressed(Key.W))
@@ -136,6 +137,16 @@ public class Window
         }
 
         Camera.Position += direction * (float)elapsedTime * Camera.Speed;
+
+        _elapsedTime += elapsedTime;
+        _frameCount++;
+
+        if (_elapsedTime > _updateInterval)
+        {
+            _fps = _frameCount / _elapsedTime;
+            _frameCount = 0;
+            _elapsedTime = 0;
+        }
     }
 
     protected virtual void OnRender(double elapsedTime) { }

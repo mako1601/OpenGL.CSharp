@@ -59,6 +59,9 @@ public class ShaderProgram : IDisposable
     public void SetVector2(string name, float x, float y) =>
         _gl.Uniform2(_gl.GetUniformLocation(_handle, name), x, y);
 
+    public void SetVector2(string name, float value) =>
+        _gl.Uniform2(_gl.GetUniformLocation(_handle, name), value, value);
+
     public void SetVector3(string name, Vector3 value) =>
         _gl.Uniform3(_gl.GetUniformLocation(_handle, name), value);
 
@@ -73,6 +76,9 @@ public class ShaderProgram : IDisposable
 
     public void SetVector4(string name, float x, float y, float z, float w) =>
         _gl.Uniform4(_gl.GetUniformLocation(_handle, name), x, y, z, w);
+
+    public void SetVector4(string name, float value) =>
+        _gl.Uniform4(_gl.GetUniformLocation(_handle, name), value, value, value, value);
 
     public unsafe void SetMatrix2(string name, Matrix2X2<float> matrix) =>
         _gl.UniformMatrix2(_gl.GetUniformLocation(_handle, name), 1, false, (float*)&matrix);

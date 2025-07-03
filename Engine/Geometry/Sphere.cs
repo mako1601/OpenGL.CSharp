@@ -6,11 +6,11 @@ public static class Sphere
 {
     public static MeshPrimitive Create(
         Vector3 size,
-        ushort slices      = 16,
-        ushort stacks       = 8,
-        bool normal         = true,
-        bool uv             = true,
-        bool normalMap      = true,
+        ushort slices = 16,
+        ushort stacks = 8,
+        bool normal = true,
+        bool uv = true,
+        bool normalMap = true,
         bool stretchTexture = true
     )
     {
@@ -20,9 +20,9 @@ public static class Sphere
         }
 
         int vertexSize = 3;
-        if (normal)     vertexSize += 3;
-        if (uv)         vertexSize += 2;
-        if (normalMap)  vertexSize += 6;
+        if (normal) vertexSize += 3;
+        if (uv) vertexSize += 2;
+        if (normalMap) vertexSize += 6;
 
         float[] vertices = new float[(stacks + 1) * (slices + 1) * vertexSize];
         uint[] indices = new uint[stacks * slices * 6];

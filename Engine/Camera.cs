@@ -135,5 +135,5 @@ public class Camera
     }
 
     public void ChangeZoom(float deltaScroll) =>
-        _zoom = System.Math.Clamp(_zoom - deltaScroll, 60f, 120f);
+        _zoom = Math.Clamp(_zoom - deltaScroll, 60f, 120f);
 }
