@@ -36,7 +36,7 @@ public class Window : Engine.Window
         base.OnRender(elapsedTime);
 
         Scene.Draw(GL, Camera, WindowState.Time);
-        GUI.Render(Camera);
+        GUI.Render(this, Camera);
     }
 
     protected override void OnClose()

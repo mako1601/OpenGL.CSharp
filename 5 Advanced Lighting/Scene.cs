@@ -7,10 +7,7 @@ namespace AdvancedLighting;
 
 public class Scene : IDisposable
 {
-    public static float Shininess { get; set; } = 64f;
-    public static float Gamma { get; set; } = 2.2f;
-    public static bool UseBlinnPhong { get; set; } = true;
-    public static bool IsPaused { get; set; } = false;
+    private float _simulatedTime = 0f;
 
     private readonly BufferObject<float> _lightvbo;
     private readonly BufferObject<uint> _lightebo;
@@ -26,12 +23,14 @@ public class Scene : IDisposable
     private readonly Engine.Graphics.Texture _texture;
 
     private Matrix4x4 _lightModel = Matrix4x4.Identity;
-    private readonly MeshPrimitive _sphere =
-        Sphere.Create(new Vector3(0.04f, 0.04f, 0.04f), 16, 16, false, false, false);
-    private readonly MeshPrimitive _plane =
-        Engine.Geometry.Plane.Create(new Vector2(11f, 11f), normalMap: false, stretchTexture: false);
 
-    private float _simulatedTime = 0f;
+    private readonly MeshPrimitive _sphere = Sphere.Create(new Vector3(0.04f), 16, 16, false, false, false);
+    private readonly MeshPrimitive _plane = Engine.Geometry.Plane.Create(new Vector2(11f), normalMap: false, stretchTexture: false);
+
+    public static float Shininess { get; set; } = 64f;
+    public static float Gamma { get; set; } = 2.2f;
+    public static bool UseBlinnPhong { get; set; } = true;
+    public static bool IsPaused { get; set; } = false;
 
     public Scene(GL gl)
     {
@@ -43,43 +42,21 @@ public class Scene : IDisposable
         // gl.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
         gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-        _lightebo = new BufferObject<uint>(
-            gl,
-            _sphere.Indices,
-            BufferTargetARB.ElementArrayBuffer,
-            BufferUsageARB.StaticDraw
-        );
-        _lightvbo = new BufferObject<float>(
-            gl,
-            _sphere.Vertices,
-            BufferTargetARB.ArrayBuffer,
-            BufferUsageARB.StaticDraw
-        );
+        _lightebo = new BufferObject<uint>(gl, _sphere.Indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
+        _lightvbo = new BufferObject<float>(gl, _sphere.Vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
         _lightvao = new VertexArrayObject<float, uint>(gl, _lightvbo, _lightebo);
-
         _lightvao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 3, 0);
         _lightvao.Unbind();
 
-        _ebo = new BufferObject<uint>(
-            gl,
-            _plane.Indices,
-            BufferTargetARB.ElementArrayBuffer,
-            BufferUsageARB.StaticDraw
-        );
-        _vbo = new BufferObject<float>(
-            gl,
-            _plane.Vertices,
-            BufferTargetARB.ArrayBuffer,
-            BufferUsageARB.StaticDraw
-        );
+        _ebo = new BufferObject<uint>(gl, _plane.Indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
+        _vbo = new BufferObject<float>(gl, _plane.Vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
         _vao = new VertexArrayObject<float, uint>(gl, _vbo, _ebo);
-
         _vao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 8, 0);
         _vao.VertexAttributePointer(1, 3, VertexAttribPointerType.Float, 8, 3);
         _vao.VertexAttributePointer(2, 2, VertexAttribPointerType.Float, 8, 6);
 
-        _shader = new ShaderProgram(gl, "main_shader.vert", "main_shader.frag");
-        _lightingShader = new ShaderProgram(gl, "main_shader.vert", "lighting.frag");
+        _shader = new ShaderProgram(gl, "main_shader.glslv", "main_shader.glslf");
+        _lightingShader = new ShaderProgram(gl, "main_shader.glslv", "lighting.glslf");
         _texture = new Engine.Graphics.Texture(gl, "brickwall.jpg");
     }
 
@@ -101,18 +78,12 @@ public class Scene : IDisposable
 
         _lightModel = Matrix4x4.Identity;
         _lightModel *= Matrix4x4.CreateTranslation(0f, 2.1f + 2f * MathF.Cos(_simulatedTime), 0f);
-        _lightModel *= Matrix4x4.CreateRotationY(_simulatedTime, new Vector3(0.5f, 0.5f, 0.5f));
+        _lightModel *= Matrix4x4.CreateRotationY(_simulatedTime, new Vector3(0.5f));
 
         _shader.SetMatrix4("uModel", _lightModel);
         _shader.SetMatrix4("uView", camera.GetViewMatrix());
         _shader.SetMatrix4("uProjection", camera.GetProjectionMatrix());
-
-        gl.DrawElements(
-            PrimitiveType.Triangles,
-            (uint)_sphere.Indices.Length,
-            DrawElementsType.UnsignedInt,
-            null
-        );
+        gl.DrawElements(PrimitiveType.Triangles, (uint)_sphere.Indices.Length, DrawElementsType.UnsignedInt, null);
 
         _lightvao.Unbind();
 
@@ -133,12 +104,9 @@ public class Scene : IDisposable
 
         _lightingShader.SetVector3("uLight.position", _lightModel.M41, _lightModel.M42, _lightModel.M43);
 
-        gl.DrawElements(
-            PrimitiveType.Triangles,
-            (uint)_plane.Indices.Length,
-            DrawElementsType.UnsignedInt,
-            null
-        );
+        gl.DrawElements(PrimitiveType.Triangles, (uint)_plane.Indices.Length, DrawElementsType.UnsignedInt, null);
+
+        _vao.Unbind();
     }
 
     public void Dispose()

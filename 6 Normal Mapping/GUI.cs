@@ -24,7 +24,7 @@ public class GUI : IDisposable
         Controller.Update(elapsedTime);
     }
 
-    public void Render(Camera camera)
+    public void Render(Window window, Camera camera)
     {
         if (_isDisposed || Controller == null) return;
 
@@ -40,6 +40,7 @@ public class GUI : IDisposable
         ImGuiNET.ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiNET.ImGuiCond.FirstUseEver);
 
         ImGuiNET.ImGui.Begin("Lighting Settings", ImGuiNET.ImGuiWindowFlags.NoMove);
+        ImGuiNET.ImGui.Text($"FPS: {window.FPS:0}");
         ImGuiNET.ImGui.DragFloat3(
             "Camera Pos",
             ref cameraPosition,
