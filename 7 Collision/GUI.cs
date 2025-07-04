@@ -36,7 +36,7 @@ public class GUI : IDisposable
         var ambient = Scene.Ambient;
         var specular = Scene.Specular;
 
-        ImGuiNET.ImGui.SetNextWindowSize(new Vector2(325, 170), ImGuiNET.ImGuiCond.FirstUseEver);
+        ImGuiNET.ImGui.SetNextWindowSize(new Vector2(325, 190), ImGuiNET.ImGuiCond.FirstUseEver);
         ImGuiNET.ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiNET.ImGuiCond.FirstUseEver);
 
         ImGuiNET.ImGui.Begin("Lighting Settings", ImGuiNET.ImGuiWindowFlags.NoMove);

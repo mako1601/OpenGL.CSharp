@@ -1,3 +1,4 @@
+using System.Numerics;
 using Engine.Physics.Utilities;
 
 namespace Engine.Physics.Colliders;
@@ -6,7 +7,8 @@ namespace Engine.Physics.Colliders;
 /// Represents a spherical collider used in the collision physics.
 /// </summary>
 /// <param name="transform">The transform of the sphere collider.</param>
-public class SphereCollider(Transform transform) : Collider(transform)
+/// <param name="size">The size of the sphere collider.</param>
+public class SphereCollider(Transform transform, Vector3 size) : Collider(transform, size)
 {
     /// <summary>
     /// Gets the diameter of the sphere collider,

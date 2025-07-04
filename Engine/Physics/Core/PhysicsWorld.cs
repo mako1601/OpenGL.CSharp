@@ -178,20 +178,40 @@ public class PhysicsWorld
 
         return (colliderA, colliderB) switch
         {
+            // box collisions
             (BoxCollider boxA, BoxCollider boxB)
                 => CollisionHelper.BoxVsBox(boxA, boxB, out normal, out penetrationDepth),
-
-            (SphereCollider sphereA, SphereCollider sphereB)
-                => CollisionHelper.SphereVsSphere(sphereA, sphereB, out normal, out penetrationDepth),
 
             (BoxCollider box, SphereCollider sphere)
                 => CollisionHelper.BoxVsSphere(box, sphere, out normal, out penetrationDepth),
 
+            (BoxCollider box, CapsuleCollider capsule)
+                => CollisionHelper.BoxVsCapsule(box, capsule, out normal, out penetrationDepth),
+
+            // sphere collisions
+            (SphereCollider sphereA, SphereCollider sphereB)
+                => CollisionHelper.SphereVsSphere(sphereA, sphereB, out normal, out penetrationDepth),
+
             (SphereCollider sphere, BoxCollider box)
                 => CollisionHelper.BoxVsSphere(box, sphere, out normal, out penetrationDepth) &&
-                   ReverseNormalAndReturnTrue(ref normal),// Reverse normal for sphere-box vs box-sphere
+                   ReverseNormalAndReturnTrue(ref normal),
 
-            _ => throw new NotImplementedException(),
+            (SphereCollider sphere, CapsuleCollider capsule)
+                => CollisionHelper.SphereVsCapsule(sphere, capsule, out normal, out penetrationDepth),
+
+            // capsule collisions
+            (CapsuleCollider capsuleA, CapsuleCollider capsuleB)
+                => CollisionHelper.CapsuleVsCapsule(capsuleA, capsuleB, out normal, out penetrationDepth),
+
+            (CapsuleCollider capsule, BoxCollider box)
+                => CollisionHelper.BoxVsCapsule(box, capsule, out normal, out penetrationDepth) &&
+                   ReverseNormalAndReturnTrue(ref normal),
+
+            (CapsuleCollider capsule, SphereCollider sphere)
+                => CollisionHelper.SphereVsCapsule(sphere, capsule, out normal, out penetrationDepth) &&
+                   ReverseNormalAndReturnTrue(ref normal),
+
+            _ => throw new NotImplementedException($"Collision detection not implemented for {colliderA.GetType().Name} vs {colliderB.GetType().Name}"),
         };
     }
 

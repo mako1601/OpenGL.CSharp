@@ -35,14 +35,6 @@ public class Transform
     public Quaternion Rotation { get; set; } = Quaternion.Identity;
 
     /// <summary>
-    /// Gets the world matrix representing the rotation and translation (without scale).
-    /// Useful for calculations where uniform scaling is undesired.
-    /// </summary>
-    public Matrix4x4 WorldMatrixWithoutScale
-        => Matrix4x4.CreateFromQuaternion(Rotation) *
-           Matrix4x4.CreateTranslation(Position);
-
-    /// <summary>
     /// Gets the full world matrix representing the object's transformation,
     /// including scale, rotation, and translation.
     /// </summary>

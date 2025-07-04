@@ -35,8 +35,11 @@ public class Scene : IDisposable
 
     private readonly PhysicsWorld _physicsWorld = new();
 
-    private readonly MeshPrimitive _cube;
+
+    private readonly MeshPrimitive _sphere;
     private readonly MeshPrimitive _plane;
+    private readonly Vector3 _sphereSize = new(1f, 1f, 1f);
+    private readonly Vector3 _planeSize = new(5f, 0.001f, 5f);
     private readonly List<PhysicsObject> _objects = [];
     private readonly List<PhysicsObject> _cubeFaces = [];
 
@@ -55,24 +58,21 @@ public class Scene : IDisposable
         // gl.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
         gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-        var faceSize = new Vector3(5f, 0.001f, 5f);
-        var objectSize = Vector3.One;
-
-        _cube = Sphere.Create(objectSize, 16, 16, false, false, false);
-        _lightEbo = new BufferObject<uint>(gl, _cube.Indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
-        _lightVbo = new BufferObject<float>(gl, _cube.Vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
+        _sphere = Sphere.Create(_sphereSize, 64, 64, false, false, false);
+        _lightEbo = new BufferObject<uint>(gl, _sphere.Indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
+        _lightVbo = new BufferObject<float>(gl, _sphere.Vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
         _lightVao = new VertexArrayObject<float, uint>(gl, _lightVbo, _lightEbo);
         _lightVao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 3, 0);
         _lightVao.Unbind();
 
-        var colliderMesh = Cube.Create(objectSize, false, false, false, false, PrimitiveType.Lines);
+        var colliderMesh = Cube.Create(_sphereSize, false, false, false, false, PrimitiveType.Lines);
         _colliderVbo = new BufferObject<float>(gl, colliderMesh.Vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
         _colliderEbo = new BufferObject<uint>(gl, colliderMesh.Indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
         _colliderVao = new VertexArrayObject<float, uint>(gl, _colliderVbo, _colliderEbo);
         _colliderVao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 3, 0);
         _colliderVao.Unbind();
 
-        _plane = Cube.Create(faceSize, stretchTexture: true);
+        _plane = Cube.Create(_planeSize, stretchTexture: true);
         _ebo = new BufferObject<uint>(gl, _plane.Indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
         _vbo = new BufferObject<float>(gl, _plane.Vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
         _vao = new VertexArrayObject<float, uint>(gl, _vbo, _ebo);
@@ -88,7 +88,7 @@ public class Scene : IDisposable
         _diffuseTexture = new Engine.Graphics.Texture(gl, "brickwall.jpg");
         _normalTexture = new Engine.Graphics.Texture(gl, "brickwall_normal.jpg");
 
-        CreateCubeFaces(faceSize);
+        CreateCubeFaces(_planeSize);
         CreateObjects(100);
     }
 
@@ -98,8 +98,6 @@ public class Scene : IDisposable
         gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
         UpdatePhysics(deltaTime);
-
-        // Console.WriteLine($"p = {_cubeObject.Transform.Position}\tv = {_cubeObject.Rigidbody.Velocity}\tw = {_cubeObject.Rigidbody.AngularVelocity}");
 
         // _colliderVao.Bind();
         // _colliderShader.Use();
@@ -134,7 +132,7 @@ public class Scene : IDisposable
         // cube faces
         foreach (var face in _cubeFaces)
         {
-            _lightingShader.SetMatrix4("uModel", face.Transform.WorldMatrixWithoutScale);
+            _lightingShader.SetMatrix4("uModel", face.Transform.WorldMatrix);
             _lightingShader.SetMatrix4("uView", camera.GetViewMatrix());
             _lightingShader.SetMatrix4("uProjection", camera.GetProjectionMatrix());
             gl.DrawElements(PrimitiveType.Triangles, (uint)_plane.Indices.Length, DrawElementsType.UnsignedInt, null);
@@ -151,7 +149,7 @@ public class Scene : IDisposable
             _shader.SetMatrix4("uModel", obj.Transform.WorldMatrix);
             _shader.SetMatrix4("uView", camera.GetViewMatrix());
             _shader.SetMatrix4("uProjection", camera.GetProjectionMatrix());
-            gl.DrawElements(PrimitiveType.Triangles, (uint)_cube.Indices.Length, DrawElementsType.UnsignedInt, null);
+            gl.DrawElements(PrimitiveType.Triangles, (uint)_sphere.Indices.Length, DrawElementsType.UnsignedInt, null);
         }
 
         _lightVao.Unbind();
@@ -182,12 +180,7 @@ public class Scene : IDisposable
     {
         for (int i = 0; i < 6; i++)
         {
-            var transform = new Transform()
-            {
-                Scale = size,
-                Rotation = Quaternion.Identity,
-                Position = Vector3.Zero
-            };
+            var transform = new Transform();
 
             switch (i)
             {
@@ -226,7 +219,7 @@ public class Scene : IDisposable
                     Restitution = 0.7f,
                     Friction = 0f
                 },
-                new BoxCollider(transform)
+                new BoxCollider(transform, size)
             );
 
             _cubeFaces.Add(faceObject);
@@ -261,7 +254,7 @@ public class Scene : IDisposable
                 LinearDamping = 0f,
             };
 
-            var collider = new SphereCollider(transform);
+            var collider = new SphereCollider(transform, new Vector3(1f));
 
             var obj = new PhysicsObject(transform, rigidbody, collider);
 
@@ -269,56 +262,6 @@ public class Scene : IDisposable
             _physicsWorld.AddObject(obj);
             _objects[i].Rigidbody.AddForce(new Vector3(_random.NextSingle() * 500f - 250f, _random.NextSingle() * 500f - 250f, _random.NextSingle() * 500f - 250f));
         }
-
-        // var transform1 = new Transform
-        // {
-        //     Position = new Vector3(1f, 1f, 1f),
-        //     Scale = new Vector3(0.2f)
-        // };
-
-        // var obj1 = new PhysicsObject(
-        //     transform1,
-        //     new Rigidbody
-        //     {
-        //         Mass = 0.05f,
-        //         UseGravity = true,
-        //         Gravity = Vector3.Zero,
-        //         Restitution = 1f,
-        //         Friction = 0f,
-        //         AngularDamping = 0f,
-        //         LinearDamping = 0f,
-        //     },
-        //     new SphereCollider(transform1)
-        // );
-
-        // obj1.Rigidbody.AddForce(new Vector3(-10f, 0f, 0f));
-        // _objects.Add(obj1);
-        // _physicsWorld.AddObject(obj1);
-
-        // var transform2 = new Transform
-        // {
-        //     Position = new Vector3(1f, -1f, 1f),
-        //     Scale = new Vector3(0.2f)
-        // };
-
-        // var obj2 = new PhysicsObject(
-        //     transform2,
-        //     new Rigidbody
-        //     {
-        //         Mass = 0.05f,
-        //         UseGravity = true,
-        //         Gravity = Vector3.Zero,
-        //         Restitution = 1f,
-        //         Friction = 0f,
-        //         AngularDamping = 0f,
-        //         LinearDamping = 0f,
-        //     },
-        //     new SphereCollider(transform2)
-        // );
-
-        // obj2.Rigidbody.AddForce(new Vector3(0f, 0f, 10f));
-        // _objects.Add(obj2);
-        // _physicsWorld.AddObject(obj2);
     }
 
     private void UpdatePhysics(float deltaTime)
