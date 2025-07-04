@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Silk.NET.Input;
 
 namespace Collision;
 
@@ -46,5 +47,48 @@ public class Window : Engine.Window
 
         GUI?.Dispose();
         Scene?.Dispose();
+    }
+
+    protected override void OnMouseDown(IMouse mouse, MouseButton button)
+    {
+        base.OnMouseDown(mouse, button);
+
+        if (MouseState.Cursor.CursorMode == CursorMode.Raw && button == MouseButton.Left)
+        {
+            var transform = new Engine.Physics.Utilities.Transform
+            {
+                Position = Camera.Position + Camera.Front * 0.5f,
+                Scale = new Vector3(0.1f)
+            };
+
+            var obj = new Engine.Physics.Core.PhysicsObject(
+                transform,
+                new Engine.Physics.Core.Rigidbody
+                {
+                    Mass = 0.05f,
+                    UseGravity = true,
+                    Restitution = 0.7f,
+                    Friction = 0.4f,
+                },
+                new Engine.Physics.Colliders.SphereCollider(transform, new Vector3(1f))
+            );
+
+            obj.Rigidbody.AddForce(Camera.Front * 100f);
+            Scene.Objects.Add(obj);
+            Scene.PhysicsWorld.AddObject(obj);
+        }
+    }
+
+    protected override void OnKeyDown(IKeyboard keyboard, Key key, int arg3)
+    {
+        base.OnKeyDown(keyboard, key, arg3);
+
+        if (key == Key.X)
+        {
+            foreach (var obj in Scene.Objects)
+            {
+                obj.Rigidbody.Gravity = -obj.Rigidbody.Gravity;
+            }
+        }
     }
 }

@@ -28,24 +28,22 @@ public class Scene : IDisposable
 
     private readonly ShaderProgram _shader;
     private readonly ShaderProgram _lightingShader;
-    private readonly ShaderProgram _colliderShader;
 
     private readonly Engine.Graphics.Texture _diffuseTexture;
     private readonly Engine.Graphics.Texture _normalTexture;
-
-    private readonly PhysicsWorld _physicsWorld = new();
 
 
     private readonly MeshPrimitive _sphere;
     private readonly MeshPrimitive _plane;
     private readonly Vector3 _sphereSize = new(1f, 1f, 1f);
-    private readonly Vector3 _planeSize = new(5f, 0.001f, 5f);
-    private readonly List<PhysicsObject> _objects = [];
+    private readonly Vector3 _planeSize = new(2f, 0.001f, 2f);
     private readonly List<PhysicsObject> _cubeFaces = [];
 
     public static float Shininess { get; set; } = 32f;
     public static float Ambient { get; set; } = 0.5f;
     public static float Specular { get; set; } = 0.0f;
+    public List<PhysicsObject> Objects = [];
+    public PhysicsWorld PhysicsWorld = new();
 
     public Scene(GL gl)
     {
@@ -58,11 +56,12 @@ public class Scene : IDisposable
         // gl.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
         gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-        _sphere = Sphere.Create(_sphereSize, 64, 64, false, false, false);
+        _sphere = Sphere.Create(_sphereSize, 64, 64, true, false, false);
         _lightEbo = new BufferObject<uint>(gl, _sphere.Indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
         _lightVbo = new BufferObject<float>(gl, _sphere.Vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
         _lightVao = new VertexArrayObject<float, uint>(gl, _lightVbo, _lightEbo);
-        _lightVao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 3, 0);
+        _lightVao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 6, 0);
+        _lightVao.VertexAttributePointer(1, 3, VertexAttribPointerType.Float, 6, 3);
         _lightVao.Unbind();
 
         var colliderMesh = Cube.Create(_sphereSize, false, false, false, false, PrimitiveType.Lines);
@@ -84,12 +83,11 @@ public class Scene : IDisposable
 
         _shader = new ShaderProgram(gl, "main_shader.glslv", "main_shader.glslf");
         _lightingShader = new ShaderProgram(gl, "normal.glslv", "normal.glslf");
-        _colliderShader = new ShaderProgram(gl, "line.glslv", "line.glslf");
         _diffuseTexture = new Engine.Graphics.Texture(gl, "brickwall.jpg");
         _normalTexture = new Engine.Graphics.Texture(gl, "brickwall_normal.jpg");
 
         CreateCubeFaces(_planeSize);
-        CreateObjects(100);
+        // CreateObjects(100);
     }
 
     public unsafe void Draw(GL gl, Engine.Camera camera, float deltaTime)
@@ -97,7 +95,7 @@ public class Scene : IDisposable
         gl.ClearColor(System.Drawing.Color.Black);
         gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-        UpdatePhysics(deltaTime);
+        UpdatePhysics(deltaTime, camera.Position);
 
         // _colliderVao.Bind();
         // _colliderShader.Use();
@@ -142,10 +140,26 @@ public class Scene : IDisposable
         _shader.Use();
 
         // objects
-        foreach (var obj in _objects)
+        foreach (var obj in Objects)
         {
+            // outline
+            gl.CullFace(TriangleFace.Front);
+            Vector3 outlineScale = obj.Transform.Scale * 1.02f;
+            Matrix4x4 outlineMatrix =
+                Matrix4x4.CreateScale(outlineScale) *
+                Matrix4x4.CreateFromQuaternion(obj.Transform.Rotation) *
+                Matrix4x4.CreateTranslation(obj.Transform.Position);
+
+            _shader.SetVector4("uColor", new Vector4(0f, 0f, 0f, 1f));
+            _shader.SetMatrix4("uModel", outlineMatrix);
+            _shader.SetMatrix4("uView", camera.GetViewMatrix());
+            _shader.SetMatrix4("uProjection", camera.GetProjectionMatrix());
+            gl.DrawElements(PrimitiveType.Triangles, (uint)_sphere.Indices.Length, DrawElementsType.UnsignedInt, null);
+
+            // object
+            gl.CullFace(TriangleFace.Back);
             obj.CurrentColor = Vector4.Lerp(obj.CurrentColor, new Vector4(1f), deltaTime);
-            _colliderShader.SetVector4("uColor", obj.CurrentColor);
+            _shader.SetVector4("uColor", obj.CurrentColor);
             _shader.SetMatrix4("uModel", obj.Transform.WorldMatrix);
             _shader.SetMatrix4("uView", camera.GetViewMatrix());
             _shader.SetMatrix4("uProjection", camera.GetProjectionMatrix());
@@ -168,7 +182,6 @@ public class Scene : IDisposable
         _colliderVbo?.Dispose();
         _colliderEbo?.Dispose();
         _colliderVao?.Dispose();
-        _colliderShader?.Dispose();
 
         _vbo?.Dispose();
         _ebo?.Dispose();
@@ -178,7 +191,7 @@ public class Scene : IDisposable
 
     private void CreateCubeFaces(Vector3 size)
     {
-        for (int i = 0; i < 6; i++)
+        for (int i = 1; i < 6; i++)
         {
             var transform = new Transform();
 
@@ -223,7 +236,7 @@ public class Scene : IDisposable
             );
 
             _cubeFaces.Add(faceObject);
-            _physicsWorld.AddObject(faceObject);
+            PhysicsWorld.AddObject(faceObject);
         }
     }
 
@@ -246,30 +259,31 @@ public class Scene : IDisposable
             {
                 Mass = 0.05f,
                 UseGravity = true,
-                Gravity = Vector3.Zero,
+                // Gravity = Vector3.Zero,
                 AngularVelocity = new Vector3(MathF.PI / _random.Next(1, 10), MathF.PI / _random.Next(1, 10), MathF.PI / _random.Next(1, 10)),
-                Restitution = 1f,
-                Friction = 0f,
-                AngularDamping = 0f,
-                LinearDamping = 0f,
+                // Restitution = 1f,
+                // Friction = 0f,
+                // AngularDamping = 0f,
+                // LinearDamping = 0f,
             };
 
             var collider = new SphereCollider(transform, new Vector3(1f));
 
             var obj = new PhysicsObject(transform, rigidbody, collider);
 
-            _objects.Add(obj);
-            _physicsWorld.AddObject(obj);
-            _objects[i].Rigidbody.AddForce(new Vector3(_random.NextSingle() * 500f - 250f, _random.NextSingle() * 500f - 250f, _random.NextSingle() * 500f - 250f));
+            Objects.Add(obj);
+            PhysicsWorld.AddObject(obj);
+            Objects[i].Rigidbody.AddForce(new Vector3(_random.NextSingle() * 500f - 250f, _random.NextSingle() * 500f - 250f, _random.NextSingle() * 500f - 250f));
         }
     }
 
-    private void UpdatePhysics(float deltaTime)
+    private void UpdatePhysics(float deltaTime, Vector3 cameraPosition)
+
     {
         _accumulatedTime += deltaTime;
         while (_accumulatedTime >= FixedTimeStep)
         {
-            _physicsWorld.Update(FixedTimeStep);
+            PhysicsWorld.Update(FixedTimeStep, cameraPosition);
             _accumulatedTime -= FixedTimeStep;
         }
     }

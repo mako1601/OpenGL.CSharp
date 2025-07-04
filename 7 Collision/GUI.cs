@@ -36,11 +36,13 @@ public class GUI : IDisposable
         var ambient = Scene.Ambient;
         var specular = Scene.Specular;
 
-        ImGuiNET.ImGui.SetNextWindowSize(new Vector2(325, 190), ImGuiNET.ImGuiCond.FirstUseEver);
+        ImGuiNET.ImGui.SetNextWindowSize(new Vector2(325, 220), ImGuiNET.ImGuiCond.FirstUseEver);
         ImGuiNET.ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiNET.ImGuiCond.FirstUseEver);
 
         ImGuiNET.ImGui.Begin("Lighting Settings", ImGuiNET.ImGuiWindowFlags.NoMove);
         ImGuiNET.ImGui.Text($"FPS: {window.FPS:0}");
+        ImGuiNET.ImGui.Text("LMB to shoot a ball");
+        ImGuiNET.ImGui.Text("Press X to invert gravity");
         ImGuiNET.ImGui.DragFloat3(
             "Camera Pos",
             ref cameraPosition,

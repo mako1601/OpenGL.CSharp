@@ -14,6 +14,8 @@ public class PhysicsWorld
     /// </summary>
     private const int MAX_ITERATIONS = 10;
 
+    private const float MAX_SIMULATION_DISTANCE = 50f;
+
     /// <summary>
     /// The list of all physics objects currently in the physics world.
     /// </summary>
@@ -36,16 +38,16 @@ public class PhysicsWorld
     /// Includes multiple substeps for increased stability.
     /// </summary>
     /// <param name="deltaTime">The time step for updating the physics world.</param>
-    public void Update(float deltaTime)
+    public void Update(float deltaTime, Vector3 cameraPosition)
     {
         int substeps = 4;
         float substepDelta = deltaTime / substeps;
 
         for (int i = 0; i < substeps; i++)
         {
-            UpdateVelocities(substepDelta);
-            UpdatePositions(substepDelta);
-            ResolveCollisions();
+            UpdateVelocities(substepDelta, cameraPosition);
+            UpdatePositions(substepDelta, cameraPosition);
+            ResolveCollisions(cameraPosition);
         }
     }
 
@@ -53,10 +55,12 @@ public class PhysicsWorld
     /// Updates velocities of all physics objects based on forces, gravity, and damping.
     /// </summary>
     /// <param name="deltaTime">The time step for velocity integration.</param>
-    private void UpdateVelocities(float deltaTime)
+    private void UpdateVelocities(float deltaTime, Vector3 cameraPosition)
     {
         foreach (var obj in _objects)
         {
+            if (Vector3.DistanceSquared(obj.Transform.Position, cameraPosition) > MAX_SIMULATION_DISTANCE * MAX_SIMULATION_DISTANCE) continue;
+
             var rb = obj.Rigidbody;
             if (rb.InverseMass <= 0f) continue;
 
@@ -97,10 +101,12 @@ public class PhysicsWorld
     /// Updates positions and rotations of objects based on their velocities.
     /// </summary>
     /// <param name="deltaTime">The time step for position integration.</param>
-    private void UpdatePositions(float deltaTime)
+    private void UpdatePositions(float deltaTime, Vector3 cameraPosition)
     {
         foreach (var obj in _objects)
         {
+            if (Vector3.DistanceSquared(obj.Transform.Position, cameraPosition) > MAX_SIMULATION_DISTANCE * MAX_SIMULATION_DISTANCE) continue;
+
             var rb = obj.Rigidbody;
             if (rb.InverseMass <= 0f) continue;
 
@@ -125,7 +131,7 @@ public class PhysicsWorld
     /// <summary>
     /// Resolves collisions between all objects in the scene with sequential impulse resolution.
     /// </summary>
-    private void ResolveCollisions()
+    private void ResolveCollisions(Vector3 cameraPosition)
     {
         for (int iteration = 0; iteration < MAX_ITERATIONS; iteration++)
         {
@@ -134,9 +140,12 @@ public class PhysicsWorld
             for (int i = 0; i < _objects.Count; i++)
             {
                 var objA = _objects[i];
+                if (Vector3.DistanceSquared(objA.Transform.Position, cameraPosition) > MAX_SIMULATION_DISTANCE * MAX_SIMULATION_DISTANCE) continue;
+
                 for (int j = i + 1; j < _objects.Count; j++)
                 {
                     var objB = _objects[j];
+                    if (Vector3.DistanceSquared(objB.Transform.Position, cameraPosition) > MAX_SIMULATION_DISTANCE * MAX_SIMULATION_DISTANCE) continue;
 
                     if (CheckCollision(objA, objB, out Vector3 normal, out float penetrationDepth))
                     {

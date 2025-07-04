@@ -20,9 +20,9 @@ public static class Sphere
         }
 
         int vertexSize = 3;
-        if (normal) vertexSize += 3;
-        if (uv) vertexSize += 2;
-        if (normalMap) vertexSize += 6;
+        if (normal)     vertexSize += 3;
+        if (uv)         vertexSize += 2;
+        if (normalMap)  vertexSize += 6;
 
         float[] vertices = new float[(stacks + 1) * (slices + 1) * vertexSize];
         uint[] indices = new uint[stacks * slices * 6];
