@@ -153,6 +153,8 @@ public class Window
 
     protected virtual void OnFramebufferResize(Vector2D<int> newSize)
     {
+        if (newSize.X <= 0 || newSize.Y <= 0) return;
+
         GL.Viewport(newSize);
         Camera.ChangeAspectRatio(newSize);
     }
