@@ -180,6 +180,17 @@ public class PhysicsWorld
         {
             (BoxCollider boxA, BoxCollider boxB)
                 => CollisionHelper.BoxVsBox(boxA, boxB, out normal, out penetrationDepth),
+
+            (SphereCollider sphereA, SphereCollider sphereB)
+                => CollisionHelper.SphereVsSphere(sphereA, sphereB, out normal, out penetrationDepth),
+
+            (BoxCollider box, SphereCollider sphere)
+                => CollisionHelper.BoxVsSphere(box, sphere, out normal, out penetrationDepth),
+
+            (SphereCollider sphere, BoxCollider box)
+                => CollisionHelper.BoxVsSphere(box, sphere, out normal, out penetrationDepth) &&
+                   ReverseNormalAndReturnTrue(ref normal),// Reverse normal for sphere-box vs box-sphere
+
             _ => throw new NotImplementedException(),
         };
     }
@@ -237,5 +248,16 @@ public class PhysicsWorld
             a.Rigidbody.Velocity -= frictionImpulse * invMassA;
             b.Rigidbody.Velocity += frictionImpulse * invMassB;
         }
+    }
+
+    /// <summary>
+    /// Helper method to reverse the normal vector and return true.
+    /// </summary>
+    /// <param name="normal">The normal vector to reverse.</param>
+    /// <returns>Always returns true.</returns>
+    private static bool ReverseNormalAndReturnTrue(ref Vector3 normal)
+    {
+        normal = -normal;
+        return true;
     }
 }

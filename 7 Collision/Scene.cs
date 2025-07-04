@@ -58,7 +58,7 @@ public class Scene : IDisposable
         var faceSize = new Vector3(5f, 0.001f, 5f);
         var objectSize = Vector3.One;
 
-        _cube = Cube.Create(objectSize, false, false, false);
+        _cube = Sphere.Create(objectSize, 16, 16, false, false, false);
         _lightEbo = new BufferObject<uint>(gl, _cube.Indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
         _lightVbo = new BufferObject<float>(gl, _cube.Vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
         _lightVao = new VertexArrayObject<float, uint>(gl, _lightVbo, _lightEbo);
@@ -89,7 +89,7 @@ public class Scene : IDisposable
         _normalTexture = new Engine.Graphics.Texture(gl, "brickwall_normal.jpg");
 
         CreateCubeFaces(faceSize);
-        CreateObjects(25);
+        CreateObjects(100);
     }
 
     public unsafe void Draw(GL gl, Engine.Camera camera, float deltaTime)
@@ -246,7 +246,7 @@ public class Scene : IDisposable
                     _random.NextSingle() * 4f - 2f
                 ),
                 Rotation = Quaternion.CreateFromYawPitchRoll(MathF.PI / _random.Next(1, 10), MathF.PI / _random.Next(1, 10), MathF.PI / _random.Next(1, 10)),
-                Scale = new Vector3(0.2f)
+                Scale = new Vector3(0.1f)
             };
 
             var rigidbody = new Rigidbody
@@ -261,7 +261,7 @@ public class Scene : IDisposable
                 LinearDamping = 0f,
             };
 
-            var collider = new BoxCollider(transform);
+            var collider = new SphereCollider(transform);
 
             var obj = new PhysicsObject(transform, rigidbody, collider);
 
@@ -269,6 +269,56 @@ public class Scene : IDisposable
             _physicsWorld.AddObject(obj);
             _objects[i].Rigidbody.AddForce(new Vector3(_random.NextSingle() * 500f - 250f, _random.NextSingle() * 500f - 250f, _random.NextSingle() * 500f - 250f));
         }
+
+        // var transform1 = new Transform
+        // {
+        //     Position = new Vector3(1f, 1f, 1f),
+        //     Scale = new Vector3(0.2f)
+        // };
+
+        // var obj1 = new PhysicsObject(
+        //     transform1,
+        //     new Rigidbody
+        //     {
+        //         Mass = 0.05f,
+        //         UseGravity = true,
+        //         Gravity = Vector3.Zero,
+        //         Restitution = 1f,
+        //         Friction = 0f,
+        //         AngularDamping = 0f,
+        //         LinearDamping = 0f,
+        //     },
+        //     new SphereCollider(transform1)
+        // );
+
+        // obj1.Rigidbody.AddForce(new Vector3(-10f, 0f, 0f));
+        // _objects.Add(obj1);
+        // _physicsWorld.AddObject(obj1);
+
+        // var transform2 = new Transform
+        // {
+        //     Position = new Vector3(1f, -1f, 1f),
+        //     Scale = new Vector3(0.2f)
+        // };
+
+        // var obj2 = new PhysicsObject(
+        //     transform2,
+        //     new Rigidbody
+        //     {
+        //         Mass = 0.05f,
+        //         UseGravity = true,
+        //         Gravity = Vector3.Zero,
+        //         Restitution = 1f,
+        //         Friction = 0f,
+        //         AngularDamping = 0f,
+        //         LinearDamping = 0f,
+        //     },
+        //     new SphereCollider(transform2)
+        // );
+
+        // obj2.Rigidbody.AddForce(new Vector3(0f, 0f, 10f));
+        // _objects.Add(obj2);
+        // _physicsWorld.AddObject(obj2);
     }
 
     private void UpdatePhysics(float deltaTime)
