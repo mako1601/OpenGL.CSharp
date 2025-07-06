@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Engine.Physics.Colliders;
 
 namespace Engine.Physics.Utilities;
@@ -8,6 +9,19 @@ namespace Engine.Physics.Utilities;
 /// </summary>
 public static class CollisionHelper
 {
+    // static buffers to avoid memory allocations during collision checks
+    private static readonly Vector3[] s_axesA = new Vector3[3];
+    private static readonly Vector3[] s_axesB = new Vector3[3];
+    private static readonly Vector3[] s_testAxes = new Vector3[15];
+
+    // unit vectors to avoid creating new instances
+    private static readonly Vector3 s_unitX = Vector3.UnitX;
+    private static readonly Vector3 s_unitY = Vector3.UnitY;
+    private static readonly Vector3 s_unitZ = Vector3.UnitZ;
+
+    private const float EPSILON = 0.0001f;
+    private const float HALF = 0.5f;
+
     /// <summary>
     /// Checks for collision between two oriented bounding boxes (OBB) using the Separating Axis Theorem (SAT).
     /// </summary>
@@ -16,51 +30,69 @@ public static class CollisionHelper
     /// <param name="normal">The resulting collision normal (direction from a to b).</param>
     /// <param name="penetrationDepth">The penetration depth along the collision normal.</param>
     /// <returns>True if boxes are colliding, otherwise false.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool BoxVsBox(BoxCollider a, BoxCollider b, out Vector3 normal, out float penetrationDepth)
     {
         normal = Vector3.Zero;
         penetrationDepth = float.MaxValue;
 
-        // local axes of each box (after rotation)
-        Vector3[] axesA = GetBoxAxes(a.Transform.Rotation);
-        Vector3[] axesB = GetBoxAxes(b.Transform.Rotation);
+        // compute local axes directly into pre-allocated static buffers
+        ComputeBoxAxes(a.Transform.Rotation, s_axesA);
+        ComputeBoxAxes(b.Transform.Rotation, s_axesB);
 
-        // axes to test for separation (15 in total for SAT)
-        var testAxes = new Vector3[15];
-        Array.Copy(axesA, 0, testAxes, 0, 3); // 3 face normals from box A
-        Array.Copy(axesB, 0, testAxes, 3, 3); // 3 face normals from box B
+        // pre-compute separation vector and box half-sizes
+        var separation = b.Transform.Position - a.Transform.Position;
+        var halfSizeA = a.Size * HALF;
+        var halfSizeB = b.Size * HALF;
 
-        // 9 axes from cross products of edges of both boxes
+        // copy face normals (6 axes total) directly to static buffer
+        s_testAxes[0] = s_axesA[0]; s_testAxes[1] = s_axesA[1]; s_testAxes[2] = s_axesA[2];
+        s_testAxes[3] = s_axesB[0]; s_testAxes[4] = s_axesB[1]; s_testAxes[5] = s_axesB[2];
+
+        // generate edge-edge cross product axes (9 axes) directly in static buffer
+        int axisIndex = 6;
         for (int i = 0; i < 3; i++)
         {
+            ref readonly var axisA = ref s_axesA[i];
             for (int j = 0; j < 3; j++)
             {
-                var cross = Vector3.Cross(axesA[i], axesB[j]);
-                if (cross.LengthSquared() > 0.0001f) // avoid degenerate axes
+                ref readonly var axisB = ref s_axesB[j];
+                Vector3 cross = Vector3.Cross(axisA, axisB);
+                float lengthSq = cross.LengthSquared();
+
+                // only use non-degenerate axes
+                if (lengthSq > EPSILON)
                 {
-                    testAxes[6 + i * 3 + j] = Vector3.Normalize(cross);
+                    s_testAxes[axisIndex] = cross * (1.0f / MathF.Sqrt(lengthSq)); // fast normalization
                 }
+                else
+                {
+                    s_testAxes[axisIndex] = Vector3.Zero;
+                }
+
+                axisIndex++;
             }
         }
 
-        Vector3 separation = b.Transform.Position - a.Transform.Position;
-
-        // test all axes for overlap
+        // test all 15 axes for separation with early exit optimization
         for (int i = 0; i < 15; i++)
         {
-            Vector3 axis = testAxes[i];
-            if (axis.LengthSquared() < 0.0001f) continue; // skip zero vectors
+            ref readonly var axis = ref s_testAxes[i];
 
-            float projectionA = GetProjectionRadius(a.Size, axesA, axis);
-            float projectionB = GetProjectionRadius(b.Size, axesB, axis);
+            // skip degenerate axes
+            if (axis.LengthSquared() < EPSILON) continue;
+
+            // fast projection radius calculation using static buffers
+            float projectionA = ComputeProjectionRadius(halfSizeA, s_axesA, axis);
+            float projectionB = ComputeProjectionRadius(halfSizeB, s_axesB, axis);
             float distance = MathF.Abs(Vector3.Dot(separation, axis));
 
             float overlap = projectionA + projectionB - distance;
 
-            // separating axis found — no collision
+            // early exit - separating axis found, no collision
             if (overlap <= 0f) return false;
 
-            // track axis with least penetration
+            // track minimum penetration for collision resolution
             if (overlap < penetrationDepth)
             {
                 penetrationDepth = overlap;
@@ -79,21 +111,23 @@ public static class CollisionHelper
     /// <param name="normal">The resulting collision normal (direction from box to sphere).</param>
     /// <param name="penetrationDepth">The penetration depth along the collision normal.</param>
     /// <returns>True if box and sphere are colliding, otherwise false.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool BoxVsSphere(BoxCollider box, SphereCollider sphere, out Vector3 normal, out float penetrationDepth)
     {
         normal = Vector3.Zero;
         penetrationDepth = 0f;
 
-        var sphereCenter = sphere.Transform.Position;
-        var boxCenter = box.Transform.Position;
+        Vector3 sphereCenter = sphere.Transform.Position;
+        Vector3 boxCenter = box.Transform.Position;
+        float sphereDiameter = sphere.Diameter;
 
         // transform sphere center to box's local space
-        var relativePosition = sphereCenter - boxCenter;
-        var localSphereCenter = Vector3.Transform(relativePosition, Quaternion.Conjugate(box.Transform.Rotation));
+        Vector3 relativePosition = sphereCenter - boxCenter;
+        Vector3 localSphereCenter = Vector3.Transform(relativePosition, Quaternion.Conjugate(box.Transform.Rotation));
 
-        var boxHalfSize = box.Size * 0.5f;
+        Vector3 boxHalfSize = box.Size * HALF;
 
-        // find the closest point on the box to the sphere center
+        // Find the closest point on the box to the sphere center
         var closestPoint = new Vector3(
             Math.Clamp(localSphereCenter.X, -boxHalfSize.X, boxHalfSize.X),
             Math.Clamp(localSphereCenter.Y, -boxHalfSize.Y, boxHalfSize.Y),
@@ -101,42 +135,48 @@ public static class CollisionHelper
         );
 
         Vector3 localDirection = localSphereCenter - closestPoint;
-        float distance = localDirection.Length();
+        float distanceSq = localDirection.LengthSquared();
 
-        // no collision if distance is greater than sphere diameter
-        if (distance >= sphere.Diameter) return false;
+        // no collision if distance squared is greater than sphere diameter squared
+        if (distanceSq >= sphereDiameter * sphereDiameter) return false;
 
-        if (distance < 0.0001f)
+        var distance = MathF.Sqrt(distanceSq);
+        if (distance < EPSILON)
         {
             // sphere center is inside the box - find the closest face
-            var localNormal = Vector3.Zero;
-            var minDistance = float.MaxValue;
+            Vector3 localNormal = Vector3.Zero;
+            float minDistance = float.MaxValue;
 
-            // check distance to each face
-            float[] distances = [
-                boxHalfSize.X - MathF.Abs(localSphereCenter.X), // X faces
-                boxHalfSize.Y - MathF.Abs(localSphereCenter.Y), // Y faces
-                boxHalfSize.Z - MathF.Abs(localSphereCenter.Z)  // Z faces
-            ];
+            // check distance to each face using pre-computed values
+            float distanceX = boxHalfSize.X - MathF.Abs(localSphereCenter.X);
+            float distanceY = boxHalfSize.Y - MathF.Abs(localSphereCenter.Y);
+            float distanceZ = boxHalfSize.Z - MathF.Abs(localSphereCenter.Z);
 
-            for (int i = 0; i < 3; i++)
+            if (distanceX < minDistance)
             {
-                if (distances[i] < minDistance)
-                {
-                    minDistance = distances[i];
-                    localNormal = Vector3.Zero;
-                    localNormal[i] = localSphereCenter[i] > 0 ? 1f : -1f;
-                }
+                minDistance = distanceX;
+                localNormal = new Vector3(localSphereCenter.X > 0 ? 1f : -1f, 0f, 0f);
+            }
+            if (distanceY < minDistance)
+            {
+                minDistance = distanceY;
+                localNormal = new Vector3(0f, localSphereCenter.Y > 0 ? 1f : -1f, 0f);
+            }
+            if (distanceZ < minDistance)
+            {
+                minDistance = distanceZ;
+                localNormal = new Vector3(0f, 0f, localSphereCenter.Z > 0 ? 1f : -1f);
             }
 
             normal = Vector3.Transform(localNormal, box.Transform.Rotation);
-            penetrationDepth = sphere.Diameter + minDistance;
+            penetrationDepth = sphereDiameter + minDistance;
         }
         else
         {
-            var localNormal = Vector3.Normalize(localDirection);
+            float invDistance = 1.0f / distance;
+            Vector3 localNormal = localDirection * invDistance; // fast normalization
             normal = Vector3.Transform(localNormal, box.Transform.Rotation);
-            penetrationDepth = sphere.Diameter - distance;
+            penetrationDepth = sphereDiameter - distance;
         }
 
         return true;
@@ -150,7 +190,13 @@ public static class CollisionHelper
     /// <param name="normal">The resulting collision normal (direction from box to capsule).</param>
     /// <param name="penetrationDepth">The penetration depth along the collision normal.</param>
     /// <returns>True if box and capsule are colliding, otherwise false.</returns>
-    public static bool BoxVsCapsule(BoxCollider box, CapsuleCollider capsule, out Vector3 normal, out float penetrationDepth)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool BoxVsCapsule(
+        BoxCollider box,
+        CapsuleCollider capsule,
+        out Vector3 normal,
+        out float penetrationDepth
+    )
     {
         normal = Vector3.Zero;
         penetrationDepth = 0f;
@@ -161,15 +207,16 @@ public static class CollisionHelper
         float capsuleRadius = capsule.Radius;
 
         // transform capsule line segment to box's local space
-        var boxCenter = box.Transform.Position;
-        var invBoxRotation = Quaternion.Conjugate(box.Transform.Rotation);
+        Vector3 boxCenter = box.Transform.Position;
+        Quaternion invBoxRotation = Quaternion.Conjugate(box.Transform.Rotation);
 
+        // transform capsule line segment to box's local space
         Vector3 localTop = Vector3.Transform(capsuleTop - boxCenter, invBoxRotation);
         Vector3 localBottom = Vector3.Transform(capsuleBottom - boxCenter, invBoxRotation);
-        Vector3 boxHalfSize = box.Size * 0.5f;
+        Vector3 boxHalfSize = box.Size * HALF;
 
         // find the closest point on the box to the capsule's line segment
-        var closestPointOnLine = ClosestPointOnLineSegment(localTop, localBottom, Vector3.Zero);
+        Vector3 closestPointOnLine = ClosestPointOnLineSegment(localTop, localBottom, Vector3.Zero);
 
         // clamp this point to the box surface
         var closestPointOnBox = new Vector3(
@@ -179,35 +226,40 @@ public static class CollisionHelper
         );
 
         // find the closest point on the line segment to the closest point on the box
-        var finalClosestOnLine = ClosestPointOnLineSegment(localTop, localBottom, closestPointOnBox);
+        Vector3 finalClosestOnLine = ClosestPointOnLineSegment(localTop, localBottom, closestPointOnBox);
 
         Vector3 localDirection = finalClosestOnLine - closestPointOnBox;
-        float distance = localDirection.Length();
+        float distanceSq = localDirection.LengthSquared();
+        float capsuleRadiusSq = capsuleRadius * capsuleRadius;
 
-        // no collision if distance is greater than capsule radius
-        if (distance >= capsuleRadius) return false;
+        // no collision if distance squared is greater than capsule radius squared
+        if (distanceSq >= capsuleRadiusSq) return false;
 
-        if (distance < 0.0001f)
+        float distance = MathF.Sqrt(distanceSq);
+        if (distance < EPSILON)
         {
-            // handle case where closest points overlap
-            // find the closest face of the box
-            var localNormal = Vector3.Zero;
+            // handle case where closest points overlap - find the closest face of the box
+            Vector3 localNormal = Vector3.Zero;
             float minDistance = float.MaxValue;
 
-            float[] distances = [
-                boxHalfSize.X - MathF.Abs(finalClosestOnLine.X),
-                boxHalfSize.Y - MathF.Abs(finalClosestOnLine.Y),
-                boxHalfSize.Z - MathF.Abs(finalClosestOnLine.Z)
-            ];
+            float distanceX = boxHalfSize.X - MathF.Abs(finalClosestOnLine.X);
+            float distanceY = boxHalfSize.Y - MathF.Abs(finalClosestOnLine.Y);
+            float distanceZ = boxHalfSize.Z - MathF.Abs(finalClosestOnLine.Z);
 
-            for (int i = 0; i < 3; i++)
+            if (distanceX < minDistance)
             {
-                if (distances[i] < minDistance)
-                {
-                    minDistance = distances[i];
-                    localNormal = Vector3.Zero;
-                    localNormal[i] = finalClosestOnLine[i] > 0 ? 1f : -1f;
-                }
+                minDistance = distanceX;
+                localNormal = new Vector3(finalClosestOnLine.X > 0 ? 1f : -1f, 0f, 0f);
+            }
+            if (distanceY < minDistance)
+            {
+                minDistance = distanceY;
+                localNormal = new Vector3(0f, finalClosestOnLine.Y > 0 ? 1f : -1f, 0f);
+            }
+            if (distanceZ < minDistance)
+            {
+                minDistance = distanceZ;
+                localNormal = new Vector3(0f, 0f, finalClosestOnLine.Z > 0 ? 1f : -1f);
             }
 
             normal = Vector3.Transform(localNormal, box.Transform.Rotation);
@@ -215,7 +267,8 @@ public static class CollisionHelper
         }
         else
         {
-            Vector3 localNormal = Vector3.Normalize(localDirection);
+            float invDistance = 1.0f / distance;
+            Vector3 localNormal = localDirection * invDistance; // fast normalization
             normal = Vector3.Transform(localNormal, box.Transform.Rotation);
             penetrationDepth = capsuleRadius - distance;
         }
@@ -231,30 +284,41 @@ public static class CollisionHelper
     /// <param name="normal">The resulting collision normal (direction from a to b).</param>
     /// <param name="penetrationDepth">The penetration depth along the collision normal.</param>
     /// <returns>True if spheres are colliding, otherwise false.</returns>
-    public static bool SphereVsSphere(SphereCollider a, SphereCollider b, out Vector3 normal, out float penetrationDepth)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool SphereVsSphere(
+        SphereCollider a,
+        SphereCollider b,
+        out Vector3 normal,
+        out float penetrationDepth
+    )
     {
         normal = Vector3.Zero;
         penetrationDepth = 0f;
 
         Vector3 centerA = a.Transform.Position;
         Vector3 centerB = b.Transform.Position;
+        float diameterA = a.Diameter;
+        float diameterB = b.Diameter;
 
         Vector3 direction = centerB - centerA;
-        float distance = direction.Length();
-        float combinedDiameter = a.Diameter + b.Diameter;
+        float distanceSq = direction.LengthSquared();
+        float combinedDiameter = diameterA + diameterB;
+        float combinedDiameterSq = combinedDiameter * combinedDiameter;
 
-        // no collision if distance is greater than combined diameter
-        if (distance >= combinedDiameter) return false;
+        // no collision if distance squared is greater than combined diameter squared
+        if (distanceSq >= combinedDiameterSq) return false;
 
         // handle case where spheres are at the same position
-        if (distance < 0.0001f)
+        float distance = MathF.Sqrt(distanceSq);
+        if (distance < EPSILON)
         {
-            normal = Vector3.UnitX; // arbitrary direction
+            normal = s_unitX; // use cached unit vector
             penetrationDepth = combinedDiameter;
         }
         else
         {
-            normal = Vector3.Normalize(direction);
+            float invDistance = 1.0f / distance;
+            normal = direction * invDistance; // fast normalization
             penetrationDepth = combinedDiameter - distance;
         }
 
@@ -269,7 +333,13 @@ public static class CollisionHelper
     /// <param name="normal">The resulting collision normal (direction from sphere to capsule).</param>
     /// <param name="penetrationDepth">The penetration depth along the collision normal.</param>
     /// <returns>True if sphere and capsule are colliding, otherwise false.</returns>
-    public static bool SphereVsCapsule(SphereCollider sphere, CapsuleCollider capsule, out Vector3 normal, out float penetrationDepth)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool SphereVsCapsule(
+        SphereCollider sphere,
+        CapsuleCollider capsule,
+        out Vector3 normal,
+        out float penetrationDepth
+    )
     {
         normal = Vector3.Zero;
         penetrationDepth = 0f;
@@ -282,40 +352,52 @@ public static class CollisionHelper
         var closestPointOnCapsule = ClosestPointOnLineSegment(capsuleTop, capsuleBottom, sphereCenter);
 
         Vector3 direction = sphereCenter - closestPointOnCapsule;
-        float distance = direction.Length();
+        float distanceSq = direction.LengthSquared();
         float combinedRadius = sphere.Diameter + capsule.Radius;
+        float combinedRadiusSq = combinedRadius * combinedRadius;
 
-        // no collision if distance is greater than combined sphere diameter and capsule radius
-        if (distance >= combinedRadius) return false;
+        // no collision if distance squared is greater than combined radius squared
+        if (distanceSq >= combinedRadiusSq) return false;
 
-        if (distance < 0.0001f)
+        float distance = MathF.Sqrt(distanceSq);
+        if (distance < EPSILON)
         {
             // handle case where sphere center is exactly on the capsule's axis
-            // find the vector from capsule center to sphere center
-            Vector3 capsuleCenter = (capsuleTop + capsuleBottom) * 0.5f;
+            Vector3 capsuleCenter = (capsuleTop + capsuleBottom) * HALF;
             Vector3 toSphere = sphereCenter - capsuleCenter;
+            float toSphereLengthSq = toSphere.LengthSquared();
 
-            if (toSphere.LengthSquared() < 0.0001f)
+            if (toSphereLengthSq < EPSILON)
             {
                 // use capsule's right direction as normal (perpendicular to up direction)
                 Vector3 capsuleUp = capsule.UpDirection;
-                normal = Vector3.Cross(capsuleUp, Vector3.UnitX);
-                if (normal.LengthSquared() < 0.0001f)
+                normal = Vector3.Cross(capsuleUp, s_unitX);
+                if (normal.LengthSquared() < EPSILON)
                 {
-                    normal = Vector3.Cross(capsuleUp, Vector3.UnitZ);
+                    normal = Vector3.Cross(capsuleUp, s_unitZ);
                 }
-                normal = Vector3.Normalize(normal);
+
+                float normalLengthSq = normal.LengthSquared();
+                if (normalLengthSq > EPSILON)
+                {
+                    normal *= 1.0f / MathF.Sqrt(normalLengthSq); // fast normalization
+                }
+                else
+                {
+                    normal = s_unitX;
+                }
             }
             else
             {
-                normal = Vector3.Normalize(toSphere);
+                float invToSphereLength = 1.0f / MathF.Sqrt(toSphereLengthSq);
+                normal = toSphere * invToSphereLength; // fast normalization
             }
             penetrationDepth = combinedRadius;
         }
         else
         {
-            // normal should point from capsule to sphere (opposite of direction)
-            normal = -Vector3.Normalize(direction);
+            float invDistance = 1.0f / distance;
+            normal = -direction * invDistance; // fast normalization
             penetrationDepth = combinedRadius - distance;
         }
 
@@ -330,7 +412,13 @@ public static class CollisionHelper
     /// <param name="normal">The resulting collision normal (direction from a to b).</param>
     /// <param name="penetrationDepth">The penetration depth along the collision normal.</param>
     /// <returns>True if capsules are colliding, otherwise false.</returns>
-    public static bool CapsuleVsCapsule(CapsuleCollider a, CapsuleCollider b, out Vector3 normal, out float penetrationDepth)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool CapsuleVsCapsule(
+        CapsuleCollider a,
+        CapsuleCollider b,
+        out Vector3 normal,
+        out float penetrationDepth
+    )
     {
         normal = Vector3.Zero;
         penetrationDepth = 0f;
@@ -345,36 +433,53 @@ public static class CollisionHelper
         ClosestPointsBetweenLineSegments(a1, a2, b1, b2, out Vector3 closestA, out Vector3 closestB);
 
         Vector3 direction = closestB - closestA;
-        float distance = direction.Length();
+        float distanceSq = direction.LengthSquared();
         float combinedRadius = a.Radius + b.Radius;
+        float combinedRadiusSq = combinedRadius * combinedRadius;
 
-        // no collision if distance is greater than combined radii
-        if (distance >= combinedRadius) return false;
+        // no collision if distance squared is greater than combined radius squared
+        if (distanceSq >= combinedRadiusSq) return false;
 
-        if (distance < 0.0001f)
+        float distance = MathF.Sqrt(distanceSq);
+        if (distance < EPSILON)
         {
             // handle case where line segments intersect or are very close
-            // use cross product of both capsules' up directions
-            Vector3 crossProduct = Vector3.Cross(a.UpDirection, b.UpDirection);
-            if (crossProduct.LengthSquared() < 0.0001f)
+            Vector3 aUp = a.UpDirection;
+            Vector3 bUp = b.UpDirection;
+            Vector3 crossProduct = Vector3.Cross(aUp, bUp);
+            float crossLengthSq = crossProduct.LengthSquared();
+
+            if (crossLengthSq < EPSILON)
             {
                 // capsules are parallel, use arbitrary perpendicular direction
-                normal = Vector3.Cross(a.UpDirection, Vector3.UnitX);
-                if (normal.LengthSquared() < 0.0001f)
+                normal = Vector3.Cross(aUp, s_unitX);
+                if (normal.LengthSquared() < EPSILON)
                 {
-                    normal = Vector3.Cross(a.UpDirection, Vector3.UnitZ);
+                    normal = Vector3.Cross(aUp, s_unitZ);
                 }
-                normal = Vector3.Normalize(normal);
+
+                float normalLengthSq = normal.LengthSquared();
+                if (normalLengthSq > EPSILON)
+                {
+                    normal *= 1.0f / MathF.Sqrt(normalLengthSq); // fast normalization
+                }
+                else
+                {
+                    normal = s_unitX;
+                }
             }
             else
             {
-                normal = Vector3.Normalize(crossProduct);
+                float invCrossLength = 1f / MathF.Sqrt(crossLengthSq);
+                normal = crossProduct * invCrossLength; // fast normalization
             }
+
             penetrationDepth = combinedRadius;
         }
         else
         {
-            normal = Vector3.Normalize(direction);
+            float invDistance = 1f / distance;
+            normal = direction * invDistance; // fast normalization
             penetrationDepth = combinedRadius - distance;
         }
 
@@ -384,25 +489,33 @@ public static class CollisionHelper
     /// <summary>
     /// Gets the local axes (X, Y, Z) of a box after applying rotation.
     /// </summary>
-    /// <param name="rotation">The box rotation (as a quaternion).</param>
-    private static Vector3[] GetBoxAxes(Quaternion rotation)
-        => [
-            Vector3.Transform(Vector3.UnitX, rotation),
-            Vector3.Transform(Vector3.UnitY, rotation),
-            Vector3.Transform(Vector3.UnitZ, rotation)
-        ];
+    /// <param name="rotation">The box rotation quaternion.</param>
+    /// <param name="axesBuffer">Pre-allocated buffer to store the computed axes.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ComputeBoxAxes(Quaternion rotation, Span<Vector3> axesBuffer)
+    {
+        axesBuffer[0] = Vector3.Transform(s_unitX, rotation);
+        axesBuffer[1] = Vector3.Transform(s_unitY, rotation);
+        axesBuffer[2] = Vector3.Transform(s_unitZ, rotation);
+    }
 
     /// <summary>
     /// Computes the projection radius of a box onto a given axis.
     /// Used in SAT to test overlap along that axis.
     /// </summary>
-    /// <param name="size">The size (extents) of the box.</param>
-    /// <param name="axes">The local axes of the box (after rotation).</param>
+    /// <param name="halfSize">Pre-computed half-size of the box.</param>
+    /// <param name="axesBuffer">The local axes buffer of the box.</param>
     /// <param name="axis">The axis to project onto.</param>
-    private static float GetProjectionRadius(Vector3 size, Vector3[] axes, Vector3 axis)
-        => MathF.Abs(Vector3.Dot(axes[0] * size.X * 0.5f, axis)) +
-           MathF.Abs(Vector3.Dot(axes[1] * size.Y * 0.5f, axis)) +
-           MathF.Abs(Vector3.Dot(axes[2] * size.Z * 0.5f, axis));
+    /// <returns>The projection radius.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static float ComputeProjectionRadius(
+        in Vector3 halfSize,
+        Span<Vector3> axesBuffer,
+        in Vector3 axis
+    )
+        => MathF.Abs(Vector3.Dot(axesBuffer[0], axis) * halfSize.X) +
+           MathF.Abs(Vector3.Dot(axesBuffer[1], axis) * halfSize.Y) +
+           MathF.Abs(Vector3.Dot(axesBuffer[2], axis) * halfSize.Z);
 
     /// <summary>
     /// Finds the closest point on a line segment to a given point.
@@ -411,19 +524,22 @@ public static class CollisionHelper
     /// <param name="lineEnd">The end point of the line segment.</param>
     /// <param name="point">The point to find the closest point to.</param>
     /// <returns>The closest point on the line segment.</returns>
-    private static Vector3 ClosestPointOnLineSegment(Vector3 lineStart, Vector3 lineEnd, Vector3 point)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector3 ClosestPointOnLineSegment(
+        in Vector3 lineStart,
+        in Vector3 lineEnd,
+        in Vector3 point
+    )
     {
         Vector3 lineDirection = lineEnd - lineStart;
-        float lineLength = lineDirection.Length();
+        float lineLengthSq = lineDirection.LengthSquared();
 
-        if (lineLength < 0.0001f) return lineStart; // degenerate line segment
+        if (lineLengthSq < EPSILON) return lineStart; // degenerate line segment
 
-        lineDirection /= lineLength;
         Vector3 toPoint = point - lineStart;
-        float projection = Vector3.Dot(toPoint, lineDirection);
+        float projection = Vector3.Dot(toPoint, lineDirection) / lineLengthSq;
 
-        // clamp projection to line segment bounds
-        projection = Math.Clamp(projection, 0f, lineLength);
+        projection = Math.Clamp(projection, 0f, 1f);
 
         return lineStart + lineDirection * projection;
     }
@@ -437,11 +553,12 @@ public static class CollisionHelper
     /// <param name="b2">End point of second line segment.</param>
     /// <param name="closestA">Closest point on first line segment.</param>
     /// <param name="closestB">Closest point on second line segment.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void ClosestPointsBetweenLineSegments(
-        Vector3 a1,
-        Vector3 a2,
-        Vector3 b1,
-        Vector3 b2,
+        in Vector3 a1,
+        in Vector3 a2,
+        in Vector3 b1,
+        in Vector3 b2,
         out Vector3 closestA,
         out Vector3 closestB
     )
@@ -456,18 +573,18 @@ public static class CollisionHelper
 
         float s, t;
 
-        if (a <= 0.0001f && e <= 0.0001f)
+        if (a <= EPSILON && e <= EPSILON)
         {
             // both segments are points
             s = t = 0f;
         }
-        else if (a <= 0.0001f)
+        else if (a <= EPSILON)
         {
             // first segment is a point
             s = 0f;
             t = Math.Clamp(f / e, 0f, 1f);
         }
-        else if (e <= 0.0001f)
+        else if (e <= EPSILON)
         {
             // second segment is a point
             t = 0f;
@@ -480,7 +597,7 @@ public static class CollisionHelper
             float b = Vector3.Dot(d1, d2);
             float denom = a * e - b * b;
 
-            if (denom != 0f)
+            if (MathF.Abs(denom) > EPSILON)
             {
                 s = Math.Clamp((b * f - c * e) / denom, 0f, 1f);
             }
