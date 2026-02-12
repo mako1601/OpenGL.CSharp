@@ -16,12 +16,12 @@ public class Window : Engine.Window
     {
         base.OnLoad();
 
-        GUI = new GUI(GL, WindowState, InputContext);
         Camera.Position = new Vector3(-2.5f, 2.5f, -4f);
         Camera.Pitch = -35f;
         Camera.Yaw = 61f;
         Camera.UpdateVectors();
         Scene = new Scene(GL);
+        GUI = new GUI(GL, WindowState, InputContext, Scene);
     }
 
     protected override void OnUpdate(double elapsedTime)

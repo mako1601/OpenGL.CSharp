@@ -4,7 +4,7 @@ using SixLabors.ImageSharp.PixelFormats;
 
 namespace Engine.Graphics;
 
-public class Texture : IDisposable
+public sealed class Texture : IDisposable
 {
     private readonly uint _handle;
     private readonly GL _gl;
@@ -164,5 +164,9 @@ public class Texture : IDisposable
         _gl.BindTexture(TextureTarget.Texture2D, _handle);
     }
 
-    public void Dispose() => _gl.DeleteTexture(_handle);
+    public void Dispose()
+    {
+        _gl.DeleteTexture(_handle);
+        GC.SuppressFinalize(this);
+    }
 }

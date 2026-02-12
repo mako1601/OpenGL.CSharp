@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Engine.Geometry;
 using Engine.Graphics;
 using Silk.NET.OpenGL;
@@ -7,12 +7,10 @@ namespace Texture;
 
 public class Scene : IDisposable
 {
-    private readonly BufferObject<float> _vbo;
-    private readonly BufferObject<uint> _ebo;
-    private readonly VertexArrayObject<float, uint> _vao;
+    private readonly MeshPrimitive _cube = Cube.Create(Vector3.One, false, true, false, false);
+    private readonly Mesh _cubeMesh;
     private readonly ShaderProgram _shader;
     private readonly Engine.Graphics.Texture _texture;
-    private readonly MeshPrimitive _cube = Cube.Create(Vector3.One, false, true, false, false);
 
     public Scene(GL gl)
     {
@@ -24,22 +22,23 @@ public class Scene : IDisposable
         // gl.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
         gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-        _ebo = new BufferObject<uint>(gl, _cube.Indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
-        _vbo = new BufferObject<float>(gl, _cube.Vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
-        _vao = new VertexArrayObject<float, uint>(gl, _vbo, _ebo);
-        _vao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 5, 0);
-        _vao.VertexAttributePointer(1, 2, VertexAttribPointerType.Float, 5, 3);
+        _cubeMesh = new Mesh(
+            gl,
+            _cube,
+            new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 5, 0),
+            new VertexAttributeDescription(1, 2, VertexAttribPointerType.Float, 5, 3)
+        );
 
         _shader = new ShaderProgram(gl, "texture.glslv", "texture.glslf");
         _texture = new Engine.Graphics.Texture(gl, "brickwall.jpg");
     }
 
-    public unsafe void Draw(GL gl, Engine.Camera camera)
+    public void Draw(GL gl, Engine.Camera camera)
     {
         gl.ClearColor(System.Drawing.Color.Wheat);
         gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-        _vao.Bind();
+        _cubeMesh.Bind();
         _shader.Use();
         _texture.Bind();
 
@@ -47,15 +46,13 @@ public class Scene : IDisposable
         _shader.SetMatrix4("uModel", Matrix4x4.Identity);
         _shader.SetMatrix4("uView", camera.GetViewMatrix());
         _shader.SetMatrix4("uProjection", camera.GetProjectionMatrix());
-        gl.DrawElements(PrimitiveType.Triangles, (uint)_cube.Indices.Length, DrawElementsType.UnsignedInt, null);
+        _cubeMesh.Draw(gl);
     }
 
     public void Dispose()
     {
         _texture?.Dispose();
-        _vbo?.Dispose();
-        _ebo?.Dispose();
-        _vao?.Dispose();
+        _cubeMesh?.Dispose();
         _shader?.Dispose();
     }
 }

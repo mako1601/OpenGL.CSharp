@@ -1,0 +1,60 @@
+﻿{
+  "shader": {
+    "vertex": "normal.glslv",
+    "fragment": "normal.glslf"
+  },
+  "textures": [
+    {
+      "uniform": "uMaterial.diffuse",
+      "file": "brickwall.jpg",
+      "slot": 0
+    },
+    {
+      "uniform": "uMaterial.normal",
+      "file": "brickwall_normal.jpg",
+      "slot": 1
+    }
+  ],
+  "floats": {
+    "uMaterial.shininess": 48.0,
+    "uLight.specularStrength": 0.35
+  },
+  "vector3s": {
+    "uLight.ambient": {
+      "X": 0.06,
+      "Y": 0.05,
+      "Z": 0.04
+    },
+    "uLight.diffuse": {
+      "X": 1.0,
+      "Y": 0.85,
+      "Z": 0.65
+    },
+    "uLight.color": {
+      "X": 1.2,
+      "Y": 0.8,
+      "Z": 0.45
+    }
+  },
+  "matrix4s": {
+    "uModel": {
+      "M11": 1.0,
+      "M22": 1.0,
+      "M33": 1.0,
+      "M44": 1.0
+    }
+  },
+  "semantics": {
+    "uView": "View",
+    "uProjection": "Projection",
+    "uViewPosition": "CameraPosition",
+    "uLightPosition": "LightPosition"
+  },
+  "properties": {
+    "Shininess": "uMaterial.shininess",
+    "Ambient": "uLight.ambient",
+    "Diffuse": "uLight.diffuse",
+    "Color": "uLight.color",
+    "SpecularStrength": "uLight.specularStrength"
+  }
+}

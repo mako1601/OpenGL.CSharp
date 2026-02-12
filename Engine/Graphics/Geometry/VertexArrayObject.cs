@@ -2,7 +2,7 @@
 
 namespace Engine.Graphics;
 
-public class VertexArrayObject<TVertexType, TIndexType> : IDisposable
+public sealed class VertexArrayObject<TVertexType, TIndexType> : IDisposable
     where TVertexType : unmanaged
     where TIndexType : unmanaged
 {
@@ -41,5 +41,9 @@ public class VertexArrayObject<TVertexType, TIndexType> : IDisposable
 
     public void Unbind() => _gl.BindVertexArray(0);
 
-    public void Dispose() => _gl.DeleteVertexArray(_handle);
+    public void Dispose()
+    {
+        _gl.DeleteVertexArray(_handle);
+        GC.SuppressFinalize(this);
+    }
 }

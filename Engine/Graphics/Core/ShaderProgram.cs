@@ -4,10 +4,11 @@ using Silk.NET.OpenGL;
 
 namespace Engine.Graphics;
 
-public class ShaderProgram : IDisposable
+public sealed class ShaderProgram : IDisposable
 {
     private readonly uint _handle;
     private readonly GL _gl;
+    private readonly Dictionary<string, int> _uniformLocationCache = [];
 
     public ShaderProgram(GL gl, string vertexShaderFilename, string fragmentShaderFilename)
     {
@@ -40,57 +41,73 @@ public class ShaderProgram : IDisposable
 
     public void Use() => _gl.UseProgram(_handle);
 
-    public void Dispose() => _gl.DeleteProgram(_handle);
+    public void Dispose()
+    {
+        _gl.DeleteProgram(_handle);
+        GC.SuppressFinalize(this);
+    }
 
     public uint GetAttribLocation(string name) => (uint)_gl.GetAttribLocation(_handle, name);
 
     public void SetBool(string name, bool value) =>
-        _gl.Uniform1(_gl.GetUniformLocation(_handle, name), value ? 1 : 0);
+        _gl.Uniform1(GetUniformLocation(name), value ? 1 : 0);
 
     public void SetInt(string name, int value) =>
-        _gl.Uniform1(_gl.GetUniformLocation(_handle, name), value);
+        _gl.Uniform1(GetUniformLocation(name), value);
 
     public void SetFloat(string name, float value) =>
-        _gl.Uniform1(_gl.GetUniformLocation(_handle, name), value);
+        _gl.Uniform1(GetUniformLocation(name), value);
 
     public void SetVector2(string name, Vector2 value) =>
-        _gl.Uniform2(_gl.GetUniformLocation(_handle, name), value);
+        _gl.Uniform2(GetUniformLocation(name), value);
 
     public void SetVector2(string name, float x, float y) =>
-        _gl.Uniform2(_gl.GetUniformLocation(_handle, name), x, y);
+        _gl.Uniform2(GetUniformLocation(name), x, y);
 
     public void SetVector2(string name, float value) =>
-        _gl.Uniform2(_gl.GetUniformLocation(_handle, name), value, value);
+        _gl.Uniform2(GetUniformLocation(name), value, value);
 
     public void SetVector3(string name, Vector3 value) =>
-        _gl.Uniform3(_gl.GetUniformLocation(_handle, name), value);
+        _gl.Uniform3(GetUniformLocation(name), value);
 
     public void SetVector3(string name, float x, float y, float z) =>
-        _gl.Uniform3(_gl.GetUniformLocation(_handle, name), x, y, z);
+        _gl.Uniform3(GetUniformLocation(name), x, y, z);
 
     public void SetVector3(string name, float value) =>
-        _gl.Uniform3(_gl.GetUniformLocation(_handle, name), value, value, value);
+        _gl.Uniform3(GetUniformLocation(name), value, value, value);
 
     public unsafe void SetVector4(string name, Vector4 value) =>
-        _gl.Uniform4(_gl.GetUniformLocation(_handle, name), value);
+        _gl.Uniform4(GetUniformLocation(name), value);
 
     public void SetVector4(string name, float x, float y, float z, float w) =>
-        _gl.Uniform4(_gl.GetUniformLocation(_handle, name), x, y, z, w);
+        _gl.Uniform4(GetUniformLocation(name), x, y, z, w);
 
     public void SetVector4(string name, float value) =>
-        _gl.Uniform4(_gl.GetUniformLocation(_handle, name), value, value, value, value);
+        _gl.Uniform4(GetUniformLocation(name), value, value, value, value);
 
     public unsafe void SetMatrix2(string name, Matrix2X2<float> matrix) =>
-        _gl.UniformMatrix2(_gl.GetUniformLocation(_handle, name), 1, false, (float*)&matrix);
+        _gl.UniformMatrix2(GetUniformLocation(name), 1, false, (float*)&matrix);
 
     public unsafe void SetMatrix3(string name, Matrix3X3<float> matrix) =>
-        _gl.UniformMatrix3(_gl.GetUniformLocation(_handle, name), 1, false, (float*)&matrix);
+        _gl.UniformMatrix3(GetUniformLocation(name), 1, false, (float*)&matrix);
 
     public unsafe void SetMatrix4(string name, Matrix4X4<float> matrix) =>
-        _gl.UniformMatrix4(_gl.GetUniformLocation(_handle, name), 1, false, (float*)&matrix);
+        _gl.UniformMatrix4(GetUniformLocation(name), 1, false, (float*)&matrix);
 
     public unsafe void SetMatrix4(string name, Matrix4x4 matrix) =>
-        _gl.UniformMatrix4(_gl.GetUniformLocation(_handle, name), 1, false, (float*)&matrix);
+        _gl.UniformMatrix4(GetUniformLocation(name), 1, false, (float*)&matrix);
+
+    private int GetUniformLocation(string name)
+    {
+        if (_uniformLocationCache.TryGetValue(name, out var location))
+        {
+            return location;
+        }
+
+        location = _gl.GetUniformLocation(_handle, name);
+        _uniformLocationCache[name] = location;
+        return location;
+    }
 
     private static string LoadShaderSource(string filePath)
     {

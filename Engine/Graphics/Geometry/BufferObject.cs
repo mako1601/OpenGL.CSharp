@@ -2,7 +2,7 @@
 
 namespace Engine.Graphics;
 
-public class BufferObject<TDataType> : IDisposable
+public sealed class BufferObject<TDataType> : IDisposable
     where TDataType : unmanaged
 {
     private readonly uint _handle;
@@ -30,5 +30,9 @@ public class BufferObject<TDataType> : IDisposable
 
     public void Unbind() => _gl.BindBuffer(_bufferType, 0);
 
-    public void Dispose() => _gl.DeleteBuffer(_handle);
+    public void Dispose()
+    {
+        _gl.DeleteBuffer(_handle);
+        GC.SuppressFinalize(this);
+    }
 }

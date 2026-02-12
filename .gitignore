@@ -478,3 +478,9 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Tests
+Tests
+
+# ImGUI staff
+imgui.ini

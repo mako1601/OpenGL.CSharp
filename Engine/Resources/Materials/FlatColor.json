@@ -1,0 +1,21 @@
+﻿{
+  "shader": {
+    "vertex": "flat_color.glslv",
+    "fragment": "flat_color.glslf"
+  },
+  "vector3s": {
+    "uColor": {
+      "X": 1.2,
+      "Y": 0.8,
+      "Z": 0.45
+    }
+  },
+  "semantics": {
+    "uModel": "Model",
+    "uView": "View",
+    "uProjection": "Projection"
+  },
+  "properties": {
+    "Color": "uColor"
+  }
+}

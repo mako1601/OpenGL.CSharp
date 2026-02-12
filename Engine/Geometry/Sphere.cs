@@ -7,7 +7,7 @@ public static class Sphere
     public static MeshPrimitive Create(
         Vector3 size,
         ushort slices = 16,
-        ushort stacks = 8,
+        ushort stacks = 16,
         bool normal = true,
         bool uv = true,
         bool normalMap = true,

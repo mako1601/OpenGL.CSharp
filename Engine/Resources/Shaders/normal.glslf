@@ -18,7 +18,9 @@ struct Material {
 
 struct Light {
     vec3 ambient;
-    vec3 specular;
+    vec3 diffuse;
+    vec3 color;
+    float specularStrength;
 };
 
 uniform Material uMaterial;
@@ -31,7 +33,7 @@ void main() {
     normal = normalize(normal * 2.0 - 1.0);  // this normal is in tangent space
    
     // get diffuse color
-    vec3 color = texture(uMaterial.diffuse, fs_in.TexCoords).rgb;
+    vec3 color = pow(texture(uMaterial.diffuse, fs_in.TexCoords).rgb, vec3(2.2));
 
     // ambient
     vec3 ambient = uLight.ambient * color;
@@ -39,14 +41,14 @@ void main() {
     // diffuse
     vec3 lightDirection = normalize(fs_in.TangentLightPosition - fs_in.TangentFragPosition);
     float diff = max(dot(lightDirection, normal), 0.0);
-    vec3 diffuse = diff * color;
+    vec3 diffuse = uLight.diffuse * diff * color;
 
     // specular
     vec3 viewDirection = normalize(fs_in.TangentViewPosition - fs_in.TangentFragPosition);
-    vec3 reflectDirection = reflect(-lightDirection, normal);
     vec3 halfwayDirection = normalize(lightDirection + viewDirection);
-    vec3 specular = uLight.specular * pow(max(dot(normal, halfwayDirection), 0.0), uMaterial.shininess);
+    float spec = pow(max(dot(normal, halfwayDirection), 0.0), uMaterial.shininess);
+    vec3 specular = uLight.color * spec * uLight.specularStrength;
 
     // result
-    fColor = vec4(ambient + diffuse + specular, 1.0);
+    fColor = vec4(pow(ambient + diffuse + specular, vec3(1.0/2.2)), 1.0);
 }

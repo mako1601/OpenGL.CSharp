@@ -22,7 +22,7 @@ public class Window
     protected IMouse MouseState { get; private set; }
     protected Camera Camera { get; set; }
     protected Vector2 WindowCenter => new(WindowState.Size.X / 2f, WindowState.Size.Y / 2f);
-    protected bool IsFocused { get; private set; }
+    public bool IsFocused { get; protected set; }
     public double FPS => _fps;
 
     public Window()

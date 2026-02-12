@@ -5,28 +5,22 @@ using Silk.NET.OpenGL;
 
 namespace NormalMapping;
 
-public class Scene : IDisposable
+public sealed class Scene : IDisposable
 {
-    private readonly BufferObject<float> _lightvbo;
-    private readonly BufferObject<uint> _lightebo;
-    private readonly VertexArrayObject<float, uint> _lightvao;
-
-    private readonly BufferObject<float> _vbo;
-    private readonly BufferObject<uint> _ebo;
-    private readonly VertexArrayObject<float, uint> _vao;
-
-    private readonly ShaderProgram _shader;
-    private readonly ShaderProgram _lightingShader;
-
-    private readonly Engine.Graphics.Texture _diffuseTexture;
-    private readonly Engine.Graphics.Texture _normalTexture;
-
     private readonly MeshPrimitive _sphere = Sphere.Create(new Vector3(0.3f), 8, 8, false, false, false);
     private readonly MeshPrimitive _plane = Engine.Geometry.Plane.Create(new Vector2(11f), stretchTexture: false);
 
-    public static float Shininess { get; set; } = 32f;
-    public static float Ambient { get; set; } = 0.3f;
-    public static float Specular { get; set; } = 0.4f;
+    private readonly Mesh _lightMesh;
+    private readonly Mesh _planeMesh;
+
+    private readonly Material _lightMaterial;
+    private readonly Material _planeMaterial;
+
+    private readonly MaterialContext _materialContext = new();
+    private readonly MaterialPropertyBlock _lightBlock = new();
+
+    public Material LightMaterial => _lightMaterial;
+    public Material PlaneMaterial => _planeMaterial;
 
     public Scene(GL gl)
     {
@@ -38,35 +32,34 @@ public class Scene : IDisposable
         // gl.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
         gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-        _lightebo = new BufferObject<uint>(gl, _sphere.Indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
-        _lightvbo = new BufferObject<float>(gl, _sphere.Vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
-        _lightvao = new VertexArrayObject<float, uint>(gl, _lightvbo, _lightebo);
-        _lightvao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 3, 0);
-        _lightvao.Unbind();
+        _lightMesh = new Mesh(
+            gl,
+            _sphere,
+            new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 3, 0)
+        );
 
-        _ebo = new BufferObject<uint>(gl, _plane.Indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
-        _vbo = new BufferObject<float>(gl, _plane.Vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
-        _vao = new VertexArrayObject<float, uint>(gl, _vbo, _ebo);
-        _vao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 14, 0);
-        _vao.VertexAttributePointer(1, 3, VertexAttribPointerType.Float, 14, 3);
-        _vao.VertexAttributePointer(2, 2, VertexAttribPointerType.Float, 14, 6);
-        _vao.VertexAttributePointer(3, 3, VertexAttribPointerType.Float, 14, 8);
-        _vao.VertexAttributePointer(4, 3, VertexAttribPointerType.Float, 14, 11);
+        _planeMesh = new Mesh(
+            gl,
+            _plane,
+            new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 14, 0),
+            new VertexAttributeDescription(1, 3, VertexAttribPointerType.Float, 14, 3),
+            new VertexAttributeDescription(2, 2, VertexAttribPointerType.Float, 14, 6),
+            new VertexAttributeDescription(3, 3, VertexAttribPointerType.Float, 14, 8),
+            new VertexAttributeDescription(4, 3, VertexAttribPointerType.Float, 14, 11)
+        );
 
-        _shader = new ShaderProgram(gl, "main_shader.glslv", "main_shader.glslf");
-        _lightingShader = new ShaderProgram(gl, "normal.glslv", "normal.glslf");
-        _diffuseTexture = new Engine.Graphics.Texture(gl, "brickwall.jpg");
-        _normalTexture = new Engine.Graphics.Texture(gl, "brickwall_normal.jpg");
+        _lightMaterial = MaterialLoader.Load(gl, "FlatColor");
+        _planeMaterial = MaterialLoader.Load(gl, "BrickWall");
     }
 
-    public unsafe void Draw(GL gl, Engine.Camera camera, double time)
+    public void Draw(GL gl, Engine.Camera camera, double time)
     {
         gl.ClearColor(System.Drawing.Color.Black);
         gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
         float angle = 0.5f * (float)time;
-        var radius = 1.5f;
-        var height = 2.5f;
+        const float radius = 1.5f;
+        const float height = 2.5f;
         float bounce = 2f * MathF.Sin(2f * angle);
         var platformCenter = Vector3.Zero;
         float x = platformCenter.X + radius * MathF.Cos(angle);
@@ -77,54 +70,34 @@ public class Scene : IDisposable
         lightModel *= Matrix4x4.CreateScale(0.2f);
         lightModel *= Matrix4x4.CreateTranslation(lightPos);
 
-        _lightvao.Bind();
-        _shader.Use();
+        UpdateFrameContext(camera, lightPos);
 
-        _shader.SetMatrix4("uModel", lightModel);
-        _shader.SetMatrix4("uView", camera.GetViewMatrix());
-        _shader.SetMatrix4("uProjection", camera.GetProjectionMatrix());
+        _lightMesh.Bind();
+        _lightBlock.Set("uModel", lightModel);
+        _lightMaterial.Apply(_materialContext, _lightBlock);
+        _lightMesh.Draw(gl);
+        _lightMesh.Unbind();
 
-        gl.DrawElements(PrimitiveType.Triangles, (uint)_sphere.Indices.Length, DrawElementsType.UnsignedInt, null);
+        _planeMesh.Bind();
+        _planeMaterial.Apply(_materialContext);
+        _planeMesh.Draw(gl);
+        _planeMesh.Unbind();
+    }
 
-        _lightvao.Unbind();
-
-        _vao.Bind();
-        _lightingShader.Use();
-        _diffuseTexture.Bind(0);
-        _normalTexture.Bind(1);
-
-        _lightingShader.SetMatrix4("uModel", Matrix4x4.Identity);
-        _lightingShader.SetMatrix4("uView", camera.GetViewMatrix());
-        _lightingShader.SetMatrix4("uProjection", camera.GetProjectionMatrix());
-
-        _lightingShader.SetVector3("uViewPosition", camera.Position);
-        _lightingShader.SetVector3("uLightPosition", lightPos);
-
-        _lightingShader.SetInt("uMaterial.diffuse", 0);
-        _lightingShader.SetInt("uMaterial.normal", 1);
-        _lightingShader.SetFloat("uMaterial.shininess", Shininess);
-
-        _lightingShader.SetVector3("uLight.ambient", Ambient);
-        _lightingShader.SetVector3("uLight.specular", Specular);
-
-        gl.DrawElements(PrimitiveType.Triangles, (uint)_plane.Indices.Length, DrawElementsType.UnsignedInt, null);
-
-        _vao.Unbind();
+    private void UpdateFrameContext(Engine.Camera camera, Vector3 lightPos)
+    {
+        _materialContext.Set("View", camera.GetViewMatrix());
+        _materialContext.Set("Projection", camera.GetProjectionMatrix());
+        _materialContext.Set("CameraPosition", camera.Position);
+        _materialContext.Set("LightPosition", lightPos);
     }
 
     public void Dispose()
     {
-        _diffuseTexture?.Dispose();
-        _normalTexture?.Dispose();
-
-        _lightvbo?.Dispose();
-        _lightebo?.Dispose();
-        _lightvao?.Dispose();
-        _shader?.Dispose();
-
-        _vbo?.Dispose();
-        _ebo?.Dispose();
-        _vao?.Dispose();
-        _lightingShader?.Dispose();
+        _lightMesh?.Dispose();
+        _planeMesh?.Dispose();
+        _lightMaterial?.Dispose();
+        _planeMaterial?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

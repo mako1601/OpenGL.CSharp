@@ -2,21 +2,33 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Color", "1 Color\Color.csproj", "{1C47969E-73A1-2730-C551-27028C9FF74D}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1 Color", "1 Color", "{13F339CB-0AC3-3583-E602-97638B14EE5C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Line", "2 Line\Line.csproj", "{06719587-E9C1-1031-3610-0E07A324B366}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2 Line", "2 Line", "{189A3DD4-4157-2FDA-311C-4A4E113AF515}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Texture", "3 Texture\Texture.csproj", "{2290CFFB-BBEC-AE41-D282-2426EF1C4238}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3 Texture", "3 Texture", "{36E6A482-25C1-AEBD-518E-07D288C16E66}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Basic Lighting", "4 Basic Lighting\Basic Lighting.csproj", "{B08A0627-5EAD-8D83-CBC3-783E1F1D8A98}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4 Basic Lighting", "4 Basic Lighting", "{382CC147-CDB9-F011-220B-07A604CF52BB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Advanced Lighting", "5 Advanced Lighting\Advanced Lighting.csproj", "{4CF2B76E-094E-F9A4-2F3E-16E1C73221C0}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "5 Advanced Lighting", "5 Advanced Lighting", "{B420A7FF-5A79-EF13-E6B6-D964CCB99811}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Normal Mapping", "6 Normal Mapping\Normal Mapping.csproj", "{37C86DCE-3FB4-ABE2-4534-001B60BF9720}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "6 Normal Mapping", "6 Normal Mapping", "{8721A18A-408E-5389-0F02-05759A6C83EF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Collision", "7 Collision\Collision.csproj", "{36C86DCE-3FB4-ABE2-4534-001B60BF9720}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Engine", "Engine\Engine.csproj", "{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Engine", "Engine\Engine.csproj", "{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{9CF47860-2CEA-F379-09D8-9AEF27965D12}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Color", "1 Color\Color.csproj", "{1C47969E-73A1-2730-C551-27028C9FF74D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Line", "2 Line\Line.csproj", "{06719587-E9C1-1031-3610-0E07A324B366}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Texture", "3 Texture\Texture.csproj", "{2290CFFB-BBEC-AE41-D282-2426EF1C4238}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Basic Lighting", "4 Basic Lighting\Basic Lighting.csproj", "{B08A0627-5EAD-8D83-CBC3-783E1F1D8A98}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Advanced Lighting", "5 Advanced Lighting\Advanced Lighting.csproj", "{4CF2B76E-094E-F9A4-2F3E-16E1C73221C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Normal Mapping", "6 Normal Mapping\Normal Mapping.csproj", "{37C86DCE-3FB4-ABE2-4534-001B60BF9720}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,6 +36,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9CF47860-2CEA-F379-09D8-9AEF27965D12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9CF47860-2CEA-F379-09D8-9AEF27965D12}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9CF47860-2CEA-F379-09D8-9AEF27965D12}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9CF47860-2CEA-F379-09D8-9AEF27965D12}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1C47969E-73A1-2730-C551-27028C9FF74D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1C47969E-73A1-2730-C551-27028C9FF74D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1C47969E-73A1-2730-C551-27028C9FF74D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -48,19 +68,19 @@ Global
 		{37C86DCE-3FB4-ABE2-4534-001B60BF9720}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{37C86DCE-3FB4-ABE2-4534-001B60BF9720}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{37C86DCE-3FB4-ABE2-4534-001B60BF9720}.Release|Any CPU.Build.0 = Release|Any CPU
-		{36C86DCE-3FB4-ABE2-4534-001B60BF9720}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{36C86DCE-3FB4-ABE2-4534-001B60BF9720}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{36C86DCE-3FB4-ABE2-4534-001B60BF9720}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{36C86DCE-3FB4-ABE2-4534-001B60BF9720}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C6834DE9-48FD-31C1-8DF5-D96BED81EDC8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1C47969E-73A1-2730-C551-27028C9FF74D} = {13F339CB-0AC3-3583-E602-97638B14EE5C}
+		{06719587-E9C1-1031-3610-0E07A324B366} = {189A3DD4-4157-2FDA-311C-4A4E113AF515}
+		{2290CFFB-BBEC-AE41-D282-2426EF1C4238} = {36E6A482-25C1-AEBD-518E-07D288C16E66}
+		{B08A0627-5EAD-8D83-CBC3-783E1F1D8A98} = {382CC147-CDB9-F011-220B-07A604CF52BB}
+		{4CF2B76E-094E-F9A4-2F3E-16E1C73221C0} = {B420A7FF-5A79-EF13-E6B6-D964CCB99811}
+		{37C86DCE-3FB4-ABE2-4534-001B60BF9720} = {8721A18A-408E-5389-0F02-05759A6C83EF}
+	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {622C81F7-968E-44AB-A35F-13392B2FDC7C}
+		SolutionGuid = {065D1612-838F-4487-8F88-D31659034144}
 	EndGlobalSection
 EndGlobal

@@ -7,16 +7,12 @@ using Silk.NET.Windowing;
 
 namespace NormalMapping;
 
-public class GUI : IDisposable
+public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene) : IDisposable
 {
-    public ImGuiController Controller { get; set; }
-
     private bool _isDisposed = false;
+    private readonly Scene _scene = scene;
 
-    public GUI(GL gl, IWindow window, IInputContext input)
-    {
-        Controller = new ImGuiController(gl, window, input);
-    }
+    public ImGuiController Controller { get; set; } = new ImGuiController(gl, window, input);
 
     public void Update(float elapsedTime)
     {
@@ -32,9 +28,12 @@ public class GUI : IDisposable
         var cameraPitch = camera.Pitch;
         var cameraYaw = camera.Yaw;
 
-        var shininess = Scene.Shininess;
-        var ambient = Scene.Ambient;
-        var specular = Scene.Specular;
+        var mat = _scene.PlaneMaterial;
+        mat.TryGetProperty("Shininess", out float shininess);
+        mat.TryGetProperty("Ambient", out Vector3 ambient);
+        mat.TryGetProperty("Diffuse", out Vector3 diffuse);
+        mat.TryGetProperty("SpecularStrength", out float specularStrength);
+        _scene.LightMaterial.TryGetProperty("Color", out Vector3 color);
 
         ImGuiNET.ImGui.SetNextWindowSize(new Vector2(325, 170), ImGuiNET.ImGuiCond.FirstUseEver);
         ImGuiNET.ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiNET.ImGuiCond.FirstUseEver);
@@ -68,17 +67,22 @@ public class GUI : IDisposable
             "%.3f",
             ImGuiNET.ImGuiSliderFlags.NoInput
         );
-        ImGuiNET.ImGui.SliderFloat("Shininess", ref shininess, 1f, 256f);
-        ImGuiNET.ImGui.SliderFloat("Ambient", ref ambient, 0f, 1f);
-        ImGuiNET.ImGui.SliderFloat("Specular", ref specular, 0f, 1f);
+        ImGuiNET.ImGui.SliderFloat("Shininess", ref shininess, 8f, 256f);
+        ImGuiNET.ImGui.SliderFloat3("Ambient", ref ambient, 0f, 0.2f);
+        ImGuiNET.ImGui.SliderFloat3("Diffuse", ref diffuse, 0f, 3f);
+        ImGuiNET.ImGui.SliderFloat3("Color", ref color, 0f, 10f);
+        ImGuiNET.ImGui.SliderFloat("SpecularStrength", ref specularStrength, 0f, 2.5f);
 
         ImGuiNET.ImGui.End();
 
         Controller.Render();
 
-        Scene.Shininess = shininess;
-        Scene.Ambient = ambient;
-        Scene.Specular = specular;
+        mat.SetProperty("Shininess", shininess);
+        mat.SetProperty("Ambient", ambient);
+        mat.SetProperty("Diffuse", diffuse);
+        mat.SetProperty("Color", color);
+        mat.SetProperty("SpecularStrength", specularStrength);
+        _scene.LightMaterial.SetProperty("Color", color);
     }
 
     public void Dispose()
@@ -87,5 +91,6 @@ public class GUI : IDisposable
         _isDisposed = true;
         Controller?.Dispose();
         Controller = null;
+        GC.SuppressFinalize(this);
     }
 }
