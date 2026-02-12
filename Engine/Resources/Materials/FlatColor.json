@@ -1,7 +1,7 @@
 ﻿{
   "shader": {
     "vertex": "flat_color.glslv",
-    "fragment": "flat_color.glslf"
+    "fragment": "flat_color3.glslf"
   },
   "vector3s": {
     "uColor": {

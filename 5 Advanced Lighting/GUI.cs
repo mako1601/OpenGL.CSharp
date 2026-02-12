@@ -7,9 +7,10 @@ using Silk.NET.Windowing;
 
 namespace AdvancedLighting;
 
-public sealed class GUI(GL gl, IWindow window, IInputContext input) : IDisposable
+public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene) : IDisposable
 {
     private bool _isDisposed = false;
+    private readonly Scene _scene = scene;
 
     public ImGuiController Controller { get; set; } = new ImGuiController(gl, window, input);
 
@@ -27,10 +28,11 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input) : IDisposabl
         var cameraPitch = camera.Pitch;
         var cameraYaw = camera.Yaw;
 
-        var shininess = Scene.Shininess;
-        var gamma = Scene.Gamma;
-        var useBlinnPhong = Scene.UseBlinnPhong;
-        var isPaused = Scene.IsPaused;
+        _scene.PlaneMaterial.TryGetProperty("Shininess", out float shininess);
+        _scene.PlaneMaterial.TryGetProperty("Gamma", out float gamma);
+        _scene.PlaneMaterial.TryGetProperty("UseBlinnPhong", out bool useBlinnPhong);
+
+        var isPaused = _scene.IsPaused;
 
         ImGuiNET.ImGui.SetNextWindowSize(new Vector2(340, 200), ImGuiNET.ImGuiCond.FirstUseEver);
         ImGuiNET.ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiNET.ImGuiCond.FirstUseEver);
@@ -68,16 +70,16 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input) : IDisposabl
         ImGuiNET.ImGui.Checkbox("Use Bling-Phong", ref useBlinnPhong);
         if (ImGuiNET.ImGui.Button("Pause"))
         {
-            Scene.IsPaused = !isPaused;
+            _scene.IsPaused = !isPaused;
         }
 
         ImGuiNET.ImGui.End();
 
         Controller.Render();
 
-        Scene.Shininess = shininess;
-        Scene.Gamma = gamma;
-        Scene.UseBlinnPhong = useBlinnPhong;
+        _scene.PlaneMaterial.SetProperty("Shininess", shininess);
+        _scene.PlaneMaterial.SetProperty("Gamma", gamma);
+        _scene.PlaneMaterial.SetProperty("UseBlinnPhong", useBlinnPhong);
     }
 
     public void Dispose()

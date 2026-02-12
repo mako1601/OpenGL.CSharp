@@ -7,11 +7,10 @@ namespace Color;
 
 public sealed class Scene : IDisposable
 {
-    private readonly BufferObject<float> _vbo;
-    private readonly BufferObject<uint> _ebo;
-    private readonly VertexArrayObject<float, uint> _vao;
-    private readonly ShaderProgram _shader;
     private readonly MeshPrimitive _cube = Cube.Create(Vector3.One, false, false, false);
+    private readonly Mesh _cubeMesh;
+    private readonly Material _cubeMaterial;
+    private readonly MaterialContext _materialContext = new();
 
     public Scene(GL gl)
     {
@@ -23,35 +22,33 @@ public sealed class Scene : IDisposable
         // gl.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
         gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-        _ebo = new BufferObject<uint>(gl, _cube.Indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
-        _vbo = new BufferObject<float>(gl, _cube.Vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
-        _vao = new VertexArrayObject<float, uint>(gl, _vbo, _ebo);
-        _vao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 3, 0);
+        _cubeMesh = new Mesh(
+            gl,
+            _cube,
+            new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 3, 0)
+        );
 
-        _shader = new ShaderProgram(gl, "main_shader.glslv", "main_shader.glslf");
+        _cubeMaterial = MaterialLoader.Load(gl, "ColorScene");
     }
 
-    public unsafe void Draw(GL gl, Engine.Camera camera)
+    public void Draw(GL gl, Engine.Camera camera)
     {
         gl.ClearColor(System.Drawing.Color.Wheat);
         gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-        _vao.Bind();
-        _shader.Use();
+        _materialContext.Set("View", camera.GetViewMatrix());
+        _materialContext.Set("Projection", camera.GetProjectionMatrix());
 
-        _shader.SetVector4("uColor", 1.0f, 0.5f, 0.2f, 1.0f);
-        _shader.SetMatrix4("uModel", Matrix4x4.Identity);
-        _shader.SetMatrix4("uView", camera.GetViewMatrix());
-        _shader.SetMatrix4("uProjection", camera.GetProjectionMatrix());
-        gl.DrawElements(PrimitiveType.Triangles, (uint)_cube.Indices.Length, DrawElementsType.UnsignedInt, null);
+        _cubeMesh.Bind();
+        _cubeMaterial.Apply(_materialContext);
+        _cubeMesh.Draw(gl);
+        _cubeMesh.Unbind();
     }
 
     public void Dispose()
     {
-        _vbo?.Dispose();
-        _ebo?.Dispose();
-        _vao?.Dispose();
-        _shader?.Dispose();
+        _cubeMesh?.Dispose();
+        _cubeMaterial?.Dispose();
         GC.SuppressFinalize(this);
     }
 }

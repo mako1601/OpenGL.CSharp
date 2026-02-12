@@ -7,9 +7,10 @@ using Silk.NET.Windowing;
 
 namespace BasicLighting;
 
-public sealed class GUI(GL gl, IWindow window, IInputContext input) : IDisposable
+public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene) : IDisposable
 {
     private bool _isDisposed = false;
+    private readonly Scene _scene = scene;
 
     public ImGuiController Controller { get; set; } = new ImGuiController(gl, window, input);
 
@@ -27,10 +28,7 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input) : IDisposabl
         var cameraPitch = camera.Pitch;
         var cameraYaw = camera.Yaw;
 
-        var shininess = Scene.Shininess;
-        var ambient = Scene.Ambient;
-        var diffuse = Scene.Diffuse;
-        var specular = Scene.Specular;
+        _scene.PlaneMaterial.TryGetProperty("Shininess", out float shininess);
 
         ImGuiNET.ImGui.SetNextWindowSize(new Vector2(340, 480), ImGuiNET.ImGuiCond.FirstUseEver);
         ImGuiNET.ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiNET.ImGuiCond.FirstUseEver);
@@ -65,19 +63,28 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input) : IDisposabl
         );
         ImGuiNET.ImGui.SliderFloat("Shininess", ref shininess, 1f, 256f);
 
-        for (int i = 0; i < Scene.Ambient.Length; i++)
+        for (int i = 0; i < _scene.Lights.Count; i++)
         {
+            var light = _scene.Lights[i];
+            float ambient = light.Ambient;
+            float diffuse = light.Diffuse;
+            float specular = light.Specular;
+
             ImGuiNET.ImGui.Text($"Light {i + 1}");
-            ImGuiNET.ImGui.SliderFloat($"Ambient_{i + 1}", ref ambient[i], 0f, 1f);
-            ImGuiNET.ImGui.SliderFloat($"Diffuse_{i + 1}", ref diffuse[i], 0f, 1f);
-            ImGuiNET.ImGui.SliderFloat($"Specular_{i + 1}", ref specular[i], 0f, 1f);
+            ImGuiNET.ImGui.SliderFloat($"Ambient_{i + 1}", ref ambient, 0f, 1f);
+            ImGuiNET.ImGui.SliderFloat($"Diffuse_{i + 1}", ref diffuse, 0f, 1f);
+            ImGuiNET.ImGui.SliderFloat($"Specular_{i + 1}", ref specular, 0f, 1f);
+
+            light.Ambient = ambient;
+            light.Diffuse = diffuse;
+            light.Specular = specular;
         }
 
         ImGuiNET.ImGui.End();
 
         Controller.Render();
 
-        Scene.Shininess = shininess;
+        _scene.PlaneMaterial.SetProperty("Shininess", shininess);
     }
 
     public void Dispose()

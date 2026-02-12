@@ -1,4 +1,4 @@
-using System.Numerics;
+﻿using System.Numerics;
 using Engine.Geometry;
 using Engine.Graphics;
 using Silk.NET.OpenGL;
@@ -9,8 +9,8 @@ public sealed class Scene : IDisposable
 {
     private readonly MeshPrimitive _cube = Cube.Create(Vector3.One, false, true, false, false);
     private readonly Mesh _cubeMesh;
-    private readonly ShaderProgram _shader;
-    private readonly Engine.Graphics.Texture _texture;
+    private readonly Material _cubeMaterial;
+    private readonly MaterialContext _materialContext = new();
 
     public Scene(GL gl)
     {
@@ -29,8 +29,7 @@ public sealed class Scene : IDisposable
             new VertexAttributeDescription(1, 2, VertexAttribPointerType.Float, 5, 3)
         );
 
-        _shader = new ShaderProgram(gl, "texture.glslv", "texture.glslf");
-        _texture = new Engine.Graphics.Texture(gl, "brickwall.jpg");
+        _cubeMaterial = MaterialLoader.Load(gl, "TextureCube");
     }
 
     public void Draw(GL gl, Engine.Camera camera)
@@ -38,22 +37,19 @@ public sealed class Scene : IDisposable
         gl.ClearColor(System.Drawing.Color.Wheat);
         gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-        _cubeMesh.Bind();
-        _shader.Use();
-        _texture.Bind();
+        _materialContext.Set("View", camera.GetViewMatrix());
+        _materialContext.Set("Projection", camera.GetProjectionMatrix());
 
-        _shader.SetInt("uTexture", (int)_texture.TextureSlot);
-        _shader.SetMatrix4("uModel", Matrix4x4.Identity);
-        _shader.SetMatrix4("uView", camera.GetViewMatrix());
-        _shader.SetMatrix4("uProjection", camera.GetProjectionMatrix());
+        _cubeMesh.Bind();
+        _cubeMaterial.Apply(_materialContext);
         _cubeMesh.Draw(gl);
+        _cubeMesh.Unbind();
     }
 
     public void Dispose()
     {
-        _texture?.Dispose();
         _cubeMesh?.Dispose();
-        _shader?.Dispose();
+        _cubeMaterial?.Dispose();
         GC.SuppressFinalize(this);
     }
 }
