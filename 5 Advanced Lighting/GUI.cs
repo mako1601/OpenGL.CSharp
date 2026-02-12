@@ -7,16 +7,11 @@ using Silk.NET.Windowing;
 
 namespace AdvancedLighting;
 
-public class GUI : IDisposable
+public sealed class GUI(GL gl, IWindow window, IInputContext input) : IDisposable
 {
-    public ImGuiController Controller { get; set; }
-
     private bool _isDisposed = false;
 
-    public GUI(GL gl, IWindow window, IInputContext input)
-    {
-        Controller = new ImGuiController(gl, window, input);
-    }
+    public ImGuiController Controller { get; set; } = new ImGuiController(gl, window, input);
 
     public void Update(float elapsedTime)
     {
@@ -71,7 +66,8 @@ public class GUI : IDisposable
         ImGuiNET.ImGui.SliderFloat("Shininess", ref shininess, 1f, 256f);
         ImGuiNET.ImGui.SliderFloat("Gamma", ref gamma, 1.0f, 5f);
         ImGuiNET.ImGui.Checkbox("Use Bling-Phong", ref useBlinnPhong);
-        if (ImGuiNET.ImGui.Button("Pause")) {
+        if (ImGuiNET.ImGui.Button("Pause"))
+        {
             Scene.IsPaused = !isPaused;
         }
 
@@ -90,5 +86,6 @@ public class GUI : IDisposable
         _isDisposed = true;
         Controller?.Dispose();
         Controller = null;
+        GC.SuppressFinalize(this);
     }
 }

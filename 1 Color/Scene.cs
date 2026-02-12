@@ -5,7 +5,7 @@ using Silk.NET.OpenGL;
 
 namespace Color;
 
-public class Scene : IDisposable
+public sealed class Scene : IDisposable
 {
     private readonly BufferObject<float> _vbo;
     private readonly BufferObject<uint> _ebo;
@@ -52,5 +52,6 @@ public class Scene : IDisposable
         _ebo?.Dispose();
         _vao?.Dispose();
         _shader?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

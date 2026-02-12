@@ -5,7 +5,7 @@ using Silk.NET.OpenGL;
 
 namespace AdvancedLighting;
 
-public class Scene : IDisposable
+public sealed class Scene : IDisposable
 {
     private float _simulatedTime = 0f;
 
@@ -122,5 +122,7 @@ public class Scene : IDisposable
         _ebo?.Dispose();
         _vao?.Dispose();
         _lightingShader?.Dispose();
+
+        GC.SuppressFinalize(this);
     }
 }

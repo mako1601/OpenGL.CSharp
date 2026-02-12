@@ -5,7 +5,7 @@ using Silk.NET.OpenGL;
 
 namespace Texture;
 
-public class Scene : IDisposable
+public sealed class Scene : IDisposable
 {
     private readonly MeshPrimitive _cube = Cube.Create(Vector3.One, false, true, false, false);
     private readonly Mesh _cubeMesh;
@@ -54,5 +54,6 @@ public class Scene : IDisposable
         _texture?.Dispose();
         _cubeMesh?.Dispose();
         _shader?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

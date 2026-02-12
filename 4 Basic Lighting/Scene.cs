@@ -5,7 +5,7 @@ using Silk.NET.OpenGL;
 
 namespace BasicLighting;
 
-public class Scene : IDisposable
+public sealed class Scene : IDisposable
 {
     private readonly BufferObject<float> _lightvbo;
     private readonly BufferObject<uint> _lightebo;
@@ -125,5 +125,7 @@ public class Scene : IDisposable
         _vao?.Dispose();
 
         _shader?.Dispose();
+
+        GC.SuppressFinalize(this);
     }
 }

@@ -7,16 +7,11 @@ using Silk.NET.Windowing;
 
 namespace BasicLighting;
 
-public class GUI : IDisposable
+public sealed class GUI(GL gl, IWindow window, IInputContext input) : IDisposable
 {
-    public ImGuiController Controller { get; set; }
-
     private bool _isDisposed = false;
 
-    public GUI(GL gl, IWindow window, IInputContext input)
-    {
-        Controller = new ImGuiController(gl, window, input);
-    }
+    public ImGuiController Controller { get; set; } = new ImGuiController(gl, window, input);
 
     public void Update(float elapsedTime)
     {
@@ -91,5 +86,6 @@ public class GUI : IDisposable
         _isDisposed = true;
         Controller?.Dispose();
         Controller = null;
+        GC.SuppressFinalize(this);
     }
 }
