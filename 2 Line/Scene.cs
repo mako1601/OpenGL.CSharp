@@ -7,7 +7,17 @@ namespace Line;
 
 public sealed class Scene : IDisposable
 {
-    private readonly MeshPrimitive _cube = Cube.Create(Vector3.One, false, false, false, false, PrimitiveType.Lines);
+    private readonly MeshPrimitive _cube = Cube.Create(
+        Vector3.One,
+        new MeshPrimitiveConfig 
+        {
+            HasNormals = false,
+            HasUV = false,
+            HasNormalMap = false,
+            StretchTexture = false,
+            PrimitiveType = PrimitiveType.Lines
+        }
+    );
     private readonly Mesh _cubeMesh;
     private readonly Material _lineMaterial;
     private readonly MaterialContext _materialContext = new();

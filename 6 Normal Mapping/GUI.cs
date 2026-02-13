@@ -35,13 +35,15 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene)
         mat.TryGetProperty("SpecularStrength", out float specularStrength);
         _scene.LightMaterial.TryGetProperty("Color", out Vector3 color);
 
-        ImGuiNET.ImGui.SetNextWindowSize(new Vector2(325, 170), ImGuiNET.ImGuiCond.FirstUseEver);
+        ImGuiNET.ImGui.SetNextWindowSize(new Vector2(372, 278), ImGuiNET.ImGuiCond.FirstUseEver);
         ImGuiNET.ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiNET.ImGuiCond.FirstUseEver);
 
         ImGuiNET.ImGui.Begin("Lighting Settings", ImGuiNET.ImGuiWindowFlags.NoMove);
         ImGuiNET.ImGui.Text($"FPS: {window.FPS:0}");
+
+        ImGuiNET.ImGui.SeparatorText("Camera");
         ImGuiNET.ImGui.DragFloat3(
-            "Camera Pos",
+            "Position",
             ref cameraPosition,
             0.1f,
             float.MinValue,
@@ -67,6 +69,8 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene)
             "%.3f",
             ImGuiNET.ImGuiSliderFlags.NoInput
         );
+
+        ImGuiNET.ImGui.SeparatorText("Light");
         ImGuiNET.ImGui.SliderFloat("Shininess", ref shininess, 8f, 256f);
         ImGuiNET.ImGui.SliderFloat3("Ambient", ref ambient, 0f, 0.2f);
         ImGuiNET.ImGui.SliderFloat3("Diffuse", ref diffuse, 0f, 3f);

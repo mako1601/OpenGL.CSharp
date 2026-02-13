@@ -34,12 +34,18 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene)
 
         var isPaused = _scene.IsPaused;
 
-        ImGuiNET.ImGui.SetNextWindowSize(new Vector2(340, 200), ImGuiNET.ImGuiCond.FirstUseEver);
+        ImGuiNET.ImGui.SetNextWindowSize(new Vector2(246, 243), ImGuiNET.ImGuiCond.FirstUseEver);
         ImGuiNET.ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiNET.ImGuiCond.FirstUseEver);
 
         ImGuiNET.ImGui.Begin("Lighting Settings", ImGuiNET.ImGuiWindowFlags.NoMove);
+        if (ImGuiNET.ImGui.Button("Pause"))
+        {
+            _scene.IsPaused = !isPaused;
+        }
+
+        ImGuiNET.ImGui.SeparatorText("Camera");
         ImGuiNET.ImGui.DragFloat3(
-            "Camera Pos",
+            "Position",
             ref cameraPosition,
             0.1f,
             float.MinValue,
@@ -65,13 +71,11 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene)
             "%.3f",
             ImGuiNET.ImGuiSliderFlags.NoInput
         );
+
+        ImGuiNET.ImGui.SeparatorText("Light");
         ImGuiNET.ImGui.SliderFloat("Shininess", ref shininess, 1f, 256f);
         ImGuiNET.ImGui.SliderFloat("Gamma", ref gamma, 1.0f, 5f);
         ImGuiNET.ImGui.Checkbox("Use Bling-Phong", ref useBlinnPhong);
-        if (ImGuiNET.ImGui.Button("Pause"))
-        {
-            _scene.IsPaused = !isPaused;
-        }
 
         ImGuiNET.ImGui.End();
 

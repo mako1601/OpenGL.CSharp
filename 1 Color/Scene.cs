@@ -7,7 +7,15 @@ namespace Color;
 
 public sealed class Scene : IDisposable
 {
-    private readonly MeshPrimitive _cube = Cube.Create(Vector3.One, false, false, false);
+    private readonly MeshPrimitive _cube = Cube.Create(
+        Vector3.One,
+        new MeshPrimitiveConfig
+        {
+            HasNormals = false,
+            HasUV = false,
+            HasNormalMap = false
+        }
+    );
     private readonly Mesh _cubeMesh;
     private readonly Material _cubeMaterial;
     private readonly MaterialContext _materialContext = new();

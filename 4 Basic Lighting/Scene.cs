@@ -15,8 +15,23 @@ public sealed class Scene : IDisposable
         new(new Vector3(0f, 1f,  4.125f), 0.75f, 0.8f, 0.7f),
     ];
 
-    private readonly MeshPrimitive _sphere = Sphere.Create(new Vector3(0.04f), 16, 16, false, false, false);
-    private readonly MeshPrimitive _plane = Engine.Geometry.Plane.Create(new Vector2(11f), normalMap: false, stretchTexture: false);
+    private readonly MeshPrimitive _sphere = Sphere.Create(
+        new Vector3(0.04f),
+        new MeshPrimitiveConfig
+        {
+            HasNormals = false,
+            HasUV = false,
+            HasNormalMap = false
+        }
+    );
+    private readonly MeshPrimitive _plane = Engine.Geometry.Plane.Create(
+        new Vector2(11f),
+        new MeshPrimitiveConfig
+        {
+            HasNormalMap = false,
+            StretchTexture = false
+        }
+    );
 
     private readonly Mesh _lightMesh;
     private readonly Mesh _planeMesh;

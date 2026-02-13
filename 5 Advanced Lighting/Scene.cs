@@ -10,8 +10,23 @@ public sealed class Scene : IDisposable
     private float _simulatedTime = 0f;
     private Matrix4x4 _lightModel = Matrix4x4.Identity;
 
-    private readonly MeshPrimitive _sphere = Sphere.Create(new Vector3(0.04f), 16, 16, false, false, false);
-    private readonly MeshPrimitive _plane = Engine.Geometry.Plane.Create(new Vector2(11f), normalMap: false, stretchTexture: false);
+    private readonly MeshPrimitive _sphere = Sphere.Create(
+        new Vector3(0.04f),
+        new MeshPrimitiveConfig
+        {
+            HasNormals = false,
+            HasUV = false,
+            HasNormalMap = false
+        }
+    );
+    private readonly MeshPrimitive _plane = Engine.Geometry.Plane.Create(
+        new Vector2(11f),
+        new MeshPrimitiveConfig
+        {
+            HasNormalMap = false,
+            StretchTexture = false
+        }
+    );
 
     private readonly Mesh _lightMesh;
     private readonly Mesh _planeMesh;

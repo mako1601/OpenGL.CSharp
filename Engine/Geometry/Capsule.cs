@@ -4,20 +4,14 @@ namespace Engine.Geometry;
 
 public static class Capsule
 {
-    public static MeshPrimitive Create(
-        Vector3 size,
-        ushort slices       = 16,
-        ushort stacks       = 8,
-        bool normal         = true,
-        bool uv             = true,
-        bool normalMap      = true,
-        bool stretchTexture = true
-    )
+    public static MeshPrimitive Create(Vector3 size, MeshPrimitiveConfig config = null)
     {
         if (size.X <= 0 || size.Y <= 0 || size.Z <= 0)
         {
             throw new ArgumentException($"Size must be positive and non-zero in all dimensions. Received: {size}");
         }
+
+        config ??= new MeshPrimitiveConfig();
 
         float radiusX = size.X * 0.5f;
         float radiusZ = size.Z * 0.5f;
@@ -26,39 +20,34 @@ public static class Capsule
         float halfCylinderHeight = cylinderHeight * 0.5f;
 
         int vertexSize = 3;
-        if (normal)     vertexSize += 3;
-        if (uv)         vertexSize += 2;
-        if (normalMap)  vertexSize += 6;
+        if (config.HasNormals)   vertexSize += 3;
+        if (config.HasUV)        vertexSize += 2;
+        if (config.HasNormalMap) vertexSize += 6;
 
-        int cylinderVertexCount = (slices + 1) * (stacks / 2 + 1);
-        int hemisphereVertexCount = 2 * (slices + 1) * (stacks / 2 + 1);
+        int cylinderVertexCount = (config.Slices + 1) * (config.Stacks / 2 + 1);
+        int hemisphereVertexCount = 2 * (config.Slices + 1) * (config.Stacks / 2 + 1);
         int totalVertexCount = cylinderVertexCount + hemisphereVertexCount;
 
         float[] vertices = new float[totalVertexCount * vertexSize];
-        uint[] indices = new uint[slices * (stacks / 2) * 6 * 3];
+        uint[] indices = new uint[config.Slices * (config.Stacks / 2) * 6 * 3];
 
         float hemisphereHeight = minRadius;
         float totalHeight = 2 * hemisphereHeight + cylinderHeight;
         float vHemisphere = hemisphereHeight / totalHeight;
         float vCylinder = cylinderHeight / totalHeight;
 
-        int vertOffset = 0;
+        int vertexOffset = 0;
         int indexOffset = 0;
 
         GenerateCylinder(
             vertices,
-            ref vertOffset,
+            ref vertexOffset,
             indices,
             ref indexOffset,
             radiusX,
             radiusZ,
             halfCylinderHeight,
-            slices,
-            stacks / 2,
-            normal,
-            uv,
-            normalMap,
-            stretchTexture,
+            config,
             vHemisphere,
             vCylinder,
             size
@@ -67,19 +56,14 @@ public static class Capsule
         uint vertexIndex = (uint)cylinderVertexCount;
         GenerateHemisphere(
             vertices,
-            ref vertOffset,
+            ref vertexOffset,
             indices,
             ref indexOffset,
             radiusX,
             radiusZ,
             minRadius,
             halfCylinderHeight,
-            slices,
-            stacks / 2,
-            normal,
-            uv,
-            normalMap,
-            stretchTexture,
+            config,
             vHemisphere,
             vCylinder,
             size,
@@ -89,19 +73,14 @@ public static class Capsule
 
         GenerateHemisphere(
             vertices,
-            ref vertOffset,
+            ref vertexOffset,
             indices,
             ref indexOffset,
             radiusX,
             radiusZ,
             minRadius,
             halfCylinderHeight,
-            slices,
-            stacks / 2,
-            normal,
-            uv,
-            normalMap,
-            stretchTexture,
+            config,
             vHemisphere,
             vCylinder,
             size,
@@ -113,72 +92,67 @@ public static class Capsule
     }
 
     private static void GenerateCylinder(
-        float[]     vertices,
-        ref int     vertOffset,
-        uint[]      indices,
-        ref int     indexOffset,
-        float       radiusX,
-        float       radiusZ,
-        float       halfCylinderHeight,
-        uint        slices,
-        int         halfStacks,
-        bool        normal,
-        bool        uv,
-        bool        normalMap,
-        bool        stretchTexture,
-        float       vHemisphere,
-        float       vCylinder,
-        Vector3     size
+        float[] vertices,
+        ref int vertexOffset,
+        uint[] indices,
+        ref int indexOffset,
+        float radiusX,
+        float radiusZ,
+        float halfCylinderHeight,
+        MeshPrimitiveConfig confing,
+        float vHemisphere,
+        float vCylinder,
+        Vector3 size
     )
     {
-        for (int stack = 0; stack <= halfStacks; stack++)
+        for (int stack = 0; stack <= confing.Stacks / 2; stack++)
         {
-            float stackProgress = (float)stack / halfStacks;
+            float stackProgress = (float)stack / (confing.Stacks / 2);
             float y = halfCylinderHeight - stackProgress * 2f * halfCylinderHeight;
 
-            for (int slice = 0; slice <= slices; slice++)
+            for (int slice = 0; slice <= confing.Slices; slice++)
             {
-                float u = slice * (1f / slices);
+                float u = slice * (1f / confing.Slices);
                 float angle = u * 2f * MathF.PI;
                 float cos = MathF.Cos(angle);
                 float sin = MathF.Sin(angle);
-                vertices[vertOffset++] = cos * radiusX;
-                vertices[vertOffset++] = y;
-                vertices[vertOffset++] = sin * radiusZ;
+                vertices[vertexOffset++] = cos * radiusX;
+                vertices[vertexOffset++] = y;
+                vertices[vertexOffset++] = sin * radiusZ;
 
-                if (normal)
+                if (confing.HasNormals)
                 {
-                    vertices[vertOffset++] = cos;
-                    vertices[vertOffset++] = 0;
-                    vertices[vertOffset++] = sin;
+                    vertices[vertexOffset++] = cos;
+                    vertices[vertexOffset++] = 0;
+                    vertices[vertexOffset++] = sin;
                 }
 
-                if (uv)
+                if (confing.HasUV)
                 {
-                    float v = vHemisphere + vCylinder + vHemisphere * stack / halfStacks;
-                    vertices[vertOffset++] = stretchTexture ? u : u * size.X;
-                    vertices[vertOffset++] = stretchTexture ? v : v * size.Y;
+                    float v = vHemisphere + vCylinder + vHemisphere * stack / (confing.Stacks / 2);
+                    vertices[vertexOffset++] = confing.StretchTexture ? u : u * size.X;
+                    vertices[vertexOffset++] = confing.StretchTexture ? v : v * size.Y;
                 }
 
-                if (normalMap)
+                if (confing.HasNormalMap)
                 {
-                    vertices[vertOffset++] = -sin * radiusX;
-                    vertices[vertOffset++] = 0;
-                    vertices[vertOffset++] = cos * radiusZ;
-                    vertices[vertOffset++] = 0;
-                    vertices[vertOffset++] = 1;
-                    vertices[vertOffset++] = 0;
+                    vertices[vertexOffset++] = -sin * radiusX;
+                    vertices[vertexOffset++] = 0;
+                    vertices[vertexOffset++] = cos * radiusZ;
+                    vertices[vertexOffset++] = 0;
+                    vertices[vertexOffset++] = 1;
+                    vertices[vertexOffset++] = 0;
                 }
             }
         }
 
-        for (int stack = 0; stack < halfStacks; stack++)
+        for (int stack = 0; stack < confing.Stacks / 2; stack++)
         {
-            for (int slice = 0; slice < slices; slice++)
+            for (int slice = 0; slice < confing.Slices; slice++)
             {
-                uint topLeft = (uint)(stack * (slices + 1) + slice);
+                uint topLeft = (uint)(stack * (confing.Slices + 1) + slice);
                 uint topRight = topLeft + 1;
-                uint bottomLeft = (uint)((stack + 1) * (slices + 1) + slice);
+                uint bottomLeft = (uint)((stack + 1) * (confing.Slices + 1) + slice);
                 uint bottomRight = bottomLeft + 1;
 
                 indices[indexOffset++] = topLeft;
@@ -193,65 +167,60 @@ public static class Capsule
     }
 
     private static void GenerateHemisphere(
-        float[]     vertices,
-        ref int     vertOffset,
-        uint[]      indices,
-        ref int     indexOffset,
-        float       radiusX,
-        float       radiusZ,
-        float       minRadius,
-        float       halfCylinderHeight,
-        uint        slices,
-        int         halfStacks,
-        bool        normal,
-        bool        uv,
-        bool        normalMap,
-        bool        stretchTexture,
-        float       vHemisphere,
-        float       vCylinder,
-        Vector3     size,
-        float       direction,
-        ref uint    vertexIndex
+        float[] vertices,
+        ref int vertexOffset,
+        uint[] indices,
+        ref int indexOffset,
+        float radiusX,
+        float radiusZ,
+        float minRadius,
+        float halfCylinderHeight,
+        MeshPrimitiveConfig confing,
+        float vHemisphere,
+        float vCylinder,
+        Vector3 size,
+        float direction,
+        ref uint vertexIndex
     )
     {
-        for (int stack = 0; stack <= halfStacks; stack++)
+        for (int stack = 0; stack <=  confing.Stacks / 2; stack++)
         {
-            float phi = 0.5f * MathF.PI * stack * (1f / halfStacks);
+            float phi = 0.5f * MathF.PI * stack * (1f / (confing.Stacks / 2));
             float sinPhi = MathF.Sin(phi);
             float cosPhi = MathF.Cos(phi);
             float ySign = direction;
             float y = ySign * sinPhi * minRadius + ySign * halfCylinderHeight;
 
-            for (int slice = 0; slice <= slices; slice++)
+            for (int slice = 0; slice <= confing.Slices; slice++)
             {
-                float theta = slice * (1f / slices) * 2f * MathF.PI;
+                float theta = slice * (1f / confing.Slices) * 2f * MathF.PI;
                 float cosTheta = MathF.Cos(theta);
                 float sinTheta = MathF.Sin(theta);
                 float x = cosPhi * cosTheta * radiusX;
                 float z = cosPhi * sinTheta * radiusZ;
-                vertices[vertOffset++] = x;
-                vertices[vertOffset++] = y;
-                vertices[vertOffset++] = z;
+                vertices[vertexOffset++] = x;
+                vertices[vertexOffset++] = y;
+                vertices[vertexOffset++] = z;
 
-                if (normal)
+                if (confing.HasNormals)
                 {
-                    vertices[vertOffset++] = x / radiusX;
-                    vertices[vertOffset++] = (y - ySign * halfCylinderHeight) / minRadius;
-                    vertices[vertOffset++] = z / radiusZ;
+                    vertices[vertexOffset++] = x / radiusX;
+                    vertices[vertexOffset++] = (y - ySign * halfCylinderHeight) / minRadius;
+                    vertices[vertexOffset++] = z / radiusZ;
                 }
 
-                if (uv)
+                if (confing.HasUV)
                 {
-                    float u = slice * (1f / slices);
+                    float u = slice * (1f / confing.Slices);
                     float v = direction > 0
-                        ? vHemisphere + vCylinder - vHemisphere * stack * (1f / halfStacks)
-                        : vHemisphere + vCylinder + vHemisphere * stack * (1f / halfStacks);
-                    vertices[vertOffset++] = stretchTexture ? u : u * size.X;
-                    vertices[vertOffset++] = stretchTexture ? v : v * size.Y;
+                        ? vHemisphere + vCylinder - vHemisphere * stack * (1f / (confing.Stacks / 2))
+                        : vHemisphere + vCylinder + vHemisphere * stack * (1f / (confing.Stacks / 2));
+                    vertices[vertexOffset++] = confing.StretchTexture ? u : u * size.X;
+                    vertices[vertexOffset++] = confing.StretchTexture ? v : v * size.Y;
 
                 }
 
-                if (normalMap)
+                if (confing.HasNormalMap)
                 {
                     float tx = -sinTheta * radiusX;
                     float tz = cosTheta * radiusZ;
@@ -265,22 +234,22 @@ public static class Capsule
                     btx *= invLength;
                     bty *= invLength;
                     btz *= invLength;
-                    vertices[vertOffset++] = tx;
-                    vertices[vertOffset++] = 0;
-                    vertices[vertOffset++] = tz;
-                    vertices[vertOffset++] = btx;
-                    vertices[vertOffset++] = bty;
-                    vertices[vertOffset++] = btz;
+                    vertices[vertexOffset++] = tx;
+                    vertices[vertexOffset++] = 0;
+                    vertices[vertexOffset++] = tz;
+                    vertices[vertexOffset++] = btx;
+                    vertices[vertexOffset++] = bty;
+                    vertices[vertexOffset++] = btz;
                 }
             }
         }
 
-        for (int stack = 0; stack < halfStacks; stack++)
+        for (int stack = 0; stack < confing.Stacks / 2; stack++)
         {
-            for (int slice = 0; slice < slices; slice++)
+            for (int slice = 0; slice < confing.Slices; slice++)
             {
-                uint first = vertexIndex + (uint)(stack * (slices + 1) + slice);
-                uint second = first + slices + 1;
+                uint first = vertexIndex + (uint)(stack * (confing.Slices + 1) + slice);
+                uint second = first + confing.Slices + 1;
 
                 if (direction > 0)
                 {
@@ -305,6 +274,6 @@ public static class Capsule
             }
         }
 
-        vertexIndex += (uint)((halfStacks + 1) * (slices + 1));
+        vertexIndex += (uint)((confing.Stacks / 2 + 1) * (confing.Slices + 1));
     }
 }

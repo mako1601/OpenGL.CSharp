@@ -5,20 +5,14 @@ namespace Engine.Geometry;
 
 public static class Cube
 {
-    public static MeshPrimitive Create(
-        Vector3 size,
-        bool normal         = true,
-        bool uv             = true,
-        bool normalMap      = true,
-        bool stretchTexture = true,
-        PrimitiveType type  = PrimitiveType.Triangles
-    )
+    public static MeshPrimitive Create(Vector3 size, MeshPrimitiveConfig config = null)
     {
         if (size.X <= 0 || size.Y <= 0 || size.Z <= 0)
         {
             throw new ArgumentException($"Size must be positive and non-zero in all dimensions. Received: {size}");
         }
 
+        config ??= new MeshPrimitiveConfig();
         Vector3 halfSize = size * 0.5f;
 
         ReadOnlySpan<Vector3> positions =
@@ -34,7 +28,7 @@ public static class Cube
             new(-halfSize.X,  halfSize.Y, -halfSize.Z), // 7
         ];
 
-        if (type == PrimitiveType.Lines)
+        if (config.PrimitiveType == PrimitiveType.Lines)
         {
             float[] lineVertices = new float[positions.Length * 3];
             for (int i = 0; i < positions.Length; i++)
@@ -89,9 +83,9 @@ public static class Cube
         const int FACE_COUNT = 6;
 
         int vertexSize = 3;
-        if (normal)     vertexSize += 3;
-        if (uv)         vertexSize += 2;
-        if (normalMap)  vertexSize += 6;
+        if (config.HasNormals)   vertexSize += 3;
+        if (config.HasUV)        vertexSize += 2;
+        if (config.HasNormalMap) vertexSize += 6;
 
         float[] vertices = new float[FACE_COUNT * VERTICES_PER_FACE * vertexSize];
         uint[] indices = new uint[FACE_COUNT * TRIANGLES_PER_FACE];
@@ -109,7 +103,7 @@ public static class Cube
             ref readonly var pos2 = ref positions[faceVertexIndices[face * 4 + 2]];
             ref readonly var pos3 = ref positions[faceVertexIndices[face * 4 + 3]];
 
-            if (stretchTexture)
+            if (config.StretchTexture)
             {
                 texCoords[0] = baseTexCoords[0];
                 texCoords[1] = baseTexCoords[1];
@@ -144,20 +138,20 @@ public static class Cube
                 vertices[vertexOffset++] = pos.Y;
                 vertices[vertexOffset++] = pos.Z;
 
-                if (normal)
+                if (config.HasNormals)
                 {
                     vertices[vertexOffset++] = faceNormal.X;
                     vertices[vertexOffset++] = faceNormal.Y;
                     vertices[vertexOffset++] = faceNormal.Z;
                 }
 
-                if (uv)
+                if (config.HasUV)
                 {
                     vertices[vertexOffset++] = texCoords[i].X;
                     vertices[vertexOffset++] = texCoords[i].Y;
                 }
 
-                if (normalMap)
+                if (config.HasNormalMap)
                 {
                     vertices[vertexOffset++] = tangent.X;
                     vertices[vertexOffset++] = tangent.Y;

@@ -7,7 +7,15 @@ namespace Texture;
 
 public sealed class Scene : IDisposable
 {
-    private readonly MeshPrimitive _cube = Cube.Create(Vector3.One, false, true, false, false);
+    private readonly MeshPrimitive _cube = Cube.Create(
+        Vector3.One,
+        new MeshPrimitiveConfig 
+        {
+            HasNormals = false,
+            HasNormalMap = false,
+            StretchTexture = false
+        }
+    );
     private readonly Mesh _cubeMesh;
     private readonly Material _cubeMaterial;
     private readonly MaterialContext _materialContext = new();

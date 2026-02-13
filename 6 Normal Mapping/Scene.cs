@@ -7,8 +7,24 @@ namespace NormalMapping;
 
 public sealed class Scene : IDisposable
 {
-    private readonly MeshPrimitive _sphere = Sphere.Create(new Vector3(0.3f), 8, 8, false, false, false);
-    private readonly MeshPrimitive _plane = Engine.Geometry.Plane.Create(new Vector2(11f), stretchTexture: false);
+    private readonly MeshPrimitive _sphere = Sphere.Create(
+        new Vector3(0.3f),
+        new MeshPrimitiveConfig
+        {
+            Slices = 8,
+            Stacks = 8,
+            HasNormals = false,
+            HasUV = false,
+            HasNormalMap = false
+        }
+    );
+    private readonly MeshPrimitive _plane = Engine.Geometry.Plane.Create(
+        new Vector2(11f),
+        new MeshPrimitiveConfig
+        {
+            StretchTexture = false
+        }
+    );
 
     private readonly Mesh _lightMesh;
     private readonly Mesh _planeMesh;

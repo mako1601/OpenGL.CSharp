@@ -4,18 +4,14 @@ namespace Engine.Geometry;
 
 public static class Plane
 {
-    public static MeshPrimitive Create(
-        Vector2 size,
-        bool normal         = true,
-        bool uv             = true,
-        bool normalMap      = true,
-        bool stretchTexture = true
-    )
+    public static MeshPrimitive Create(Vector2 size, MeshPrimitiveConfig config = null)
     {
         if (size.X <= 0 || size.Y <= 0)
         {
             throw new ArgumentException($"Size must be positive and non-zero. Received: {size}");
         }
+
+        config ??= new MeshPrimitiveConfig();
 
         Vector2 halfSize = size * 0.5f;
 
@@ -28,7 +24,7 @@ public static class Plane
         ];
 
         Span<Vector2> texCoords = stackalloc Vector2[4];
-        if (stretchTexture)
+        if (config.StretchTexture)
         {
             texCoords[0] = new Vector2(0, 0);
             texCoords[1] = new Vector2(1, 0);
@@ -46,7 +42,7 @@ public static class Plane
         Vector3 tangent = Vector3.Zero;
         Vector3 bitangent = Vector3.Zero;
 
-        if (normalMap)
+        if (config.HasNormalMap)
         {
             Vector3 edge1 = positions[1] - positions[0];
             Vector3 edge2 = positions[3] - positions[0];
@@ -58,9 +54,9 @@ public static class Plane
         }
 
         int vertexSize = 3;
-        if (normal)     vertexSize += 3;
-        if (uv)         vertexSize += 2;
-        if (normalMap)  vertexSize += 6;
+        if (config.HasNormals)   vertexSize += 3;
+        if (config.HasUV)        vertexSize += 2;
+        if (config.HasNormalMap) vertexSize += 6;
 
         Vector3 faceNormal = new(0f, 1f, 0f);
 
@@ -75,20 +71,20 @@ public static class Plane
             vertices[vertexOffset++] = pos.Y;
             vertices[vertexOffset++] = pos.Z;
 
-            if (normal)
+            if (config.HasNormals)
             {
                 vertices[vertexOffset++] = faceNormal.X;
                 vertices[vertexOffset++] = faceNormal.Y;
                 vertices[vertexOffset++] = faceNormal.Z;
             }
 
-            if (uv)
+            if (config.HasUV)
             {
                 vertices[vertexOffset++] = texCoords[i].X;
                 vertices[vertexOffset++] = texCoords[i].Y;
             }
 
-            if (normalMap)
+            if (config.HasNormalMap)
             {
                 vertices[vertexOffset++] = tangent.X;
                 vertices[vertexOffset++] = tangent.Y;

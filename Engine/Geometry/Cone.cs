@@ -4,87 +4,81 @@ namespace Engine.Geometry;
 
 public static class Cone
 {
-    public static MeshPrimitive Create(
-        Vector3 size,
-        ushort slices       = 16,
-        ushort stacks       = 8,
-        bool normal         = true,
-        bool uv             = true,
-        bool normalMap      = true,
-        bool stretchTexture = true
-    )
+    public static MeshPrimitive Create(Vector3 size, MeshPrimitiveConfig config = null)
     {
         if (size.X <= 0 || size.Y <= 0 || size.Z <= 0)
         {
             throw new ArgumentException($"Size must be positive and non-zero in all dimensions. Received: {size}");
         }
 
+        config ??= new MeshPrimitiveConfig();
+
         float radiusX = 0.5f * size.X;
         float radiusZ = 0.5f * size.Z;
         float height = size.Y;
 
         int vertexSize = 3;
-        if (normal)     vertexSize += 3;
-        if (uv)         vertexSize += 2;
-        if (normalMap)  vertexSize += 6;
+        if (config.HasNormals)   vertexSize += 3;
+        if (config.HasUV)        vertexSize += 2;
+        if (config.HasNormalMap) vertexSize += 6;
 
-        float[] vertices = new float[((slices + 1) * (stacks + 1) + slices + 2) * vertexSize];
-        uint[] indices = new uint[slices * stacks * 6 + slices * 3];
+        float[] vertices = new float[((config.Slices + 1) * (config.Stacks + 1) + config.Slices + 2) * vertexSize];
+        uint[] indices = new uint[config.Slices * config.Stacks * 6 + config.Slices * 3];
 
-        int vertOffset = 0;
+        int vertexOffset = 0;
         int indexOffset = 0;
 
         // side
-        for (int y = 0; y <= stacks; y++)
+        for (int y = 0; y <= config.Stacks; y++)
         {
-            float v = (float)y / stacks;
+            float v = (float)y / config.Stacks;
 
-            for (int x = 0; x <= slices; x++)
+            for (int x = 0; x <= config.Slices; x++)
             {
-                float u = (float)x / slices;
+                float u = (float)x / config.Slices;
                 float angle = u * 2f * MathF.PI;
                 float cos = MathF.Cos(angle);
                 float sin = MathF.Sin(angle);
                 var pos = new Vector3(radiusX * (1f - v) * cos, v * height - height / 2f, radiusZ * (1f - v) * sin);
-                vertices[vertOffset++] = pos.X;
-                vertices[vertOffset++] = pos.Y;
-                vertices[vertOffset++] = pos.Z;
+                vertices[vertexOffset++] = pos.X;
+                vertices[vertexOffset++] = pos.Y;
+                vertices[vertexOffset++] = pos.Z;
 
-                if (normal)
+                if (config.HasNormals)
                 {
                     var n = Vector3.Normalize(new Vector3(cos * height / radiusX, radiusX / height, sin * height / radiusZ));
-                    vertices[vertOffset++] = n.X;
-                    vertices[vertOffset++] = n.Y;
-                    vertices[vertOffset++] = n.Z;
+                    vertices[vertexOffset++] = n.X;
+                    vertices[vertexOffset++] = n.Y;
+                    vertices[vertexOffset++] = n.Z;
                 }
 
-                if (uv)
+                if (config.HasUV)
                 {
-                    vertices[vertOffset++] = stretchTexture ? u : u * size.X;
-                    vertices[vertOffset++] = stretchTexture ? v : v * size.Y;
+                    vertices[vertexOffset++] = config.StretchTexture ? u : u * size.X;
+                    vertices[vertexOffset++] = config.StretchTexture ? v : v * size.Y;
                 }
 
-                if (normalMap)
+                if (config.HasNormalMap)
                 {
                     var tangent = new Vector3(-sin, 0f, cos);
                     var bitangent = Vector3.Cross(Vector3.Normalize(new Vector3(cos * height / radiusX, radiusX / height, sin * height / radiusZ)), tangent);
-                    vertices[vertOffset++] = tangent.X;
-                    vertices[vertOffset++] = tangent.Y;
-                    vertices[vertOffset++] = tangent.Z;
-                    vertices[vertOffset++] = bitangent.X;
-                    vertices[vertOffset++] = bitangent.Y;
-                    vertices[vertOffset++] = bitangent.Z;
+                    vertices[vertexOffset++] = tangent.X;
+                    vertices[vertexOffset++] = tangent.Y;
+                    vertices[vertexOffset++] = tangent.Z;
+                    vertices[vertexOffset++] = bitangent.X;
+                    vertices[vertexOffset++] = bitangent.Y;
+                    vertices[vertexOffset++] = bitangent.Z;
                 }
             }
         }
 
-        for (int y = 0; y < stacks; y++)
+        for (int y = 0; y < config.Stacks; y++)
         {
-            for (int x = 0; x < slices; x++)
+            for (int x = 0; x < config.Slices; x++)
             {
-                uint i0 = (uint)(y * (slices + 1) + x);
+                uint i0 = (uint)(y * (config.Slices + 1) + x);
                 uint i1 = i0 + 1;
-                uint i2 = i0 + slices + 1;
+                uint i2 = i0 + config.Slices + 1;
                 uint i3 = i2 + 1;
 
                 indices[indexOffset++] = i0;
@@ -98,74 +92,74 @@ public static class Cone
         }
 
         // base center
-        vertices[vertOffset++] = 0f;
-        vertices[vertOffset++] = -height / 2f;
-        vertices[vertOffset++] = 0f;
+        vertices[vertexOffset++] = 0f;
+        vertices[vertexOffset++] = -height / 2f;
+        vertices[vertexOffset++] = 0f;
 
-        if (normal)
+        if (config.HasNormals)
         {
-            vertices[vertOffset++] = 0f;
-            vertices[vertOffset++] = -1f;
-            vertices[vertOffset++] = 0f;
+            vertices[vertexOffset++] = 0f;
+            vertices[vertexOffset++] = -1f;
+            vertices[vertexOffset++] = 0f;
         }
 
-        if (uv)
+        if (config.HasUV)
         {
-            vertices[vertOffset++] = stretchTexture ? 0.5f : 0.5f * size.X;
-            vertices[vertOffset++] = stretchTexture ? 0.5f : 0.5f * size.Z;
+            vertices[vertexOffset++] = config.StretchTexture ? 0.5f : 0.5f * size.X;
+            vertices[vertexOffset++] = config.StretchTexture ? 0.5f : 0.5f * size.Z;
         }
 
-        if (normalMap)
+        if (config.HasNormalMap)
         {
-            vertices[vertOffset++] = 1f;
-            vertices[vertOffset++] = 0f;
-            vertices[vertOffset++] = 0f;
-            vertices[vertOffset++] = 0f;
-            vertices[vertOffset++] = 0f;
-            vertices[vertOffset++] = -1f;
+            vertices[vertexOffset++] = 1f;
+            vertices[vertexOffset++] = 0f;
+            vertices[vertexOffset++] = 0f;
+            vertices[vertexOffset++] = 0f;
+            vertices[vertexOffset++] = 0f;
+            vertices[vertexOffset++] = -1f;
         }
 
         // base circles
-        for (int i = 0; i <= slices; i++)
+        for (int i = 0; i <= config.Slices; i++)
         {
-            float u = (float)i / slices;
+            float u = (float)i / config.Slices;
             float angle = u * 2f * MathF.PI;
             float cos = MathF.Cos(angle);
             float sin = MathF.Sin(angle);
             var pos = new Vector3(radiusX * cos, -height / 2f, radiusZ * sin);
-            vertices[vertOffset++] = pos.X;
-            vertices[vertOffset++] = pos.Y;
-            vertices[vertOffset++] = pos.Z;
+            vertices[vertexOffset++] = pos.X;
+            vertices[vertexOffset++] = pos.Y;
+            vertices[vertexOffset++] = pos.Z;
 
-            if (normal)
+            if (config.HasNormals)
             {
-                vertices[vertOffset++] = 0f;
-                vertices[vertOffset++] = -1f;
-                vertices[vertOffset++] = 0f;
+                vertices[vertexOffset++] = 0f;
+                vertices[vertexOffset++] = -1f;
+                vertices[vertexOffset++] = 0f;
             }
 
-            if (uv)
+            if (config.HasUV)
             {
-                vertices[vertOffset++] = stretchTexture ? cos * 0.5f + 0.5f : (cos * 0.5f + 0.5f) * size.X;
-                vertices[vertOffset++] = stretchTexture ? sin * 0.5f + 0.5f : (sin * 0.5f + 0.5f) * size.Z;
+                vertices[vertexOffset++] = config.StretchTexture ? cos * 0.5f + 0.5f : (cos * 0.5f + 0.5f) * size.X;
+                vertices[vertexOffset++] = config.StretchTexture ? sin * 0.5f + 0.5f : (sin * 0.5f + 0.5f) * size.Z;
             }
 
-            if (normalMap)
+            if (config.HasNormalMap)
             {
-                vertices[vertOffset++] = 1f;
-                vertices[vertOffset++] = 0f;
-                vertices[vertOffset++] = 0f;
-                vertices[vertOffset++] = 0f;
-                vertices[vertOffset++] = 0f;
-                vertices[vertOffset++] = -1f;
+                vertices[vertexOffset++] = 1f;
+                vertices[vertexOffset++] = 0f;
+                vertices[vertexOffset++] = 0f;
+                vertices[vertexOffset++] = 0f;
+                vertices[vertexOffset++] = 0f;
+                vertices[vertexOffset++] = -1f;
             }
         }
 
-        for (int i = 0; i < slices; i++)
+        for (int i = 0; i < config.Slices; i++)
         {
-            int i0 = (slices + 1) * (stacks + 1);
+            int i0 = (config.Slices + 1) * (config.Stacks + 1);
             int i1 = i0 + 1 + i;
-            int i2 = i0 + 1 + ((i + 1) % (slices + 1));
+            int i2 = i0 + 1 + ((i + 1) % (config.Slices + 1));
 
             indices[indexOffset++] = (uint)i0;
             indices[indexOffset++] = (uint)i1;

@@ -30,12 +30,14 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene)
 
         _scene.PlaneMaterial.TryGetProperty("Shininess", out float shininess);
 
-        ImGuiNET.ImGui.SetNextWindowSize(new Vector2(340, 480), ImGuiNET.ImGuiCond.FirstUseEver);
+        ImGuiNET.ImGui.SetNextWindowSize(new Vector2(295, 517), ImGuiNET.ImGuiCond.FirstUseEver);
         ImGuiNET.ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiNET.ImGuiCond.FirstUseEver);
 
         ImGuiNET.ImGui.Begin("Lighting Settings", ImGuiNET.ImGuiWindowFlags.NoMove);
+
+        ImGuiNET.ImGui.SeparatorText("Camera");
         ImGuiNET.ImGui.DragFloat3(
-            "Camera Pos",
+            "Position",
             ref cameraPosition,
             0.1f,
             float.MinValue,
@@ -61,8 +63,9 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene)
             "%.3f",
             ImGuiNET.ImGuiSliderFlags.NoInput
         );
-        ImGuiNET.ImGui.SliderFloat("Shininess", ref shininess, 1f, 256f);
 
+        ImGuiNET.ImGui.SeparatorText("Light");
+        ImGuiNET.ImGui.SliderFloat("Shininess", ref shininess, 1f, 256f);
         for (int i = 0; i < _scene.Lights.Count; i++)
         {
             var light = _scene.Lights[i];
