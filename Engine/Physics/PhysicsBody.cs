@@ -17,6 +17,8 @@ public sealed class PhysicsBody
     public Vector3 Gravity { get; set; } = new(0f, -9.81f, 0f);
     public float Mass { get; set; } = 1f;
     public float Restitution { get; set; } = 0.15f;
+    public float StaticFriction { get; set; } = 0.6f;
+    public float DynamicFriction { get; set; } = 0.4f;
     public bool IsStatic { get; }
     public Collider Collider { get; }
     public bool IsGrounded { get; internal set; }

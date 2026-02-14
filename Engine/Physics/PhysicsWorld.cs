@@ -5,7 +5,7 @@ namespace Engine.Physics;
 
 public sealed class PhysicsWorld
 {
-    private const int SolverIterations = 8;
+    private const int SolverIterations = 12;
     private const float PositionalCorrectionPercent = 0.95f;
     private const float PositionalCorrectionSlop = 0.0005f;
 
@@ -121,6 +121,32 @@ public sealed class PhysicsWorld
             if (!b.IsStatic)
             {
                 b.Velocity += impulse * invMassB;
+            }
+
+            Vector3 rvAfterNormal = b.Velocity - a.Velocity;
+            Vector3 tangent = rvAfterNormal - Vector3.Dot(rvAfterNormal, manifold.Normal) * manifold.Normal;
+
+            if (tangent.LengthSquared() > 1e-8f)
+            {
+                tangent = Vector3.Normalize(tangent);
+
+                float jt = -Vector3.Dot(rvAfterNormal, tangent) / invMassSum;
+                float muS = MathF.Sqrt(a.StaticFriction * b.StaticFriction);
+                float muD = MathF.Sqrt(a.DynamicFriction * b.DynamicFriction);
+
+                Vector3 frictionImpulse = MathF.Abs(jt) < impulseMagnitude * muS
+                    ? jt * tangent
+                    : -impulseMagnitude * muD * tangent;
+
+                if (!a.IsStatic)
+                {
+                    a.Velocity -= frictionImpulse * invMassA;
+                }
+
+                if (!b.IsStatic)
+                {
+                    b.Velocity += frictionImpulse * invMassB;
+                }
             }
         }
 
