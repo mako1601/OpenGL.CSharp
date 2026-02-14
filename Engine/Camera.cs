@@ -125,10 +125,7 @@ public class Camera
 
     public void ChangeAspectRatio(Vector2D<int> newWindowSize)
     {
-        if (newWindowSize.X <= 0 || newWindowSize.Y <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(newWindowSize), "Window dimensions must be positive non-zero values.");
-        }
+        if (newWindowSize.X <= 0 || newWindowSize.Y <= 0) return;
 
         AspectRatio = (float)newWindowSize.X / newWindowSize.Y;
     }

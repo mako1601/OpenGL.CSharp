@@ -1,20 +1,18 @@
 using System.Numerics;
 using Engine.Entities;
 using Silk.NET.Input;
+using Silk.NET.Maths;
 
 namespace Physics;
 
 public class Window : Engine.Window
 {
-    private Scene? _scene;
-    private GUI? _gui;
-    private FollowCameraController? _followCamera;
+    private float _lookDeltaX;
+    private float _lookDeltaY;
+    private float _zoomDelta;
 
-    public Scene Scene => _scene ?? throw new InvalidOperationException("Scene is not initialized. OnLoad has not completed.");
-    public GUI GUI => _gui ?? throw new InvalidOperationException("GUI is not initialized. OnLoad has not completed.");
-    public FollowCameraController FollowCamera => _followCamera ?? throw new InvalidOperationException("FollowCamera is not initialized. OnLoad has not completed.");
-
-    protected override bool UseDefaultCameraControls => false;
+    public Scene? Scene { get; set; }
+    public GUI? GUI { get; set; }
 
     public Window() : base()
     {
@@ -25,20 +23,15 @@ public class Window : Engine.Window
     {
         base.OnLoad();
 
-        _scene = new Scene(GL);
-        _gui = new GUI(GL, WindowState, InputContext, _scene);
-        _followCamera = new FollowCameraController(_scene.Player)
-        {
-            HeightOffset = 0.35f
-        };
-        _followCamera.UpdateCamera(Camera, 0f);
+        Scene = new Scene(GL, (float)WindowState.Size.X / WindowState.Size.Y);
+        GUI = new GUI(GL, WindowState, InputContext, Scene);
     }
 
     protected override void OnUpdate(double elapsedTime)
     {
         base.OnUpdate(elapsedTime);
 
-        if (_isClosing) return;
+        if (IsClosing) return;
 
         var input = new PlayerInput(
             Forward: KeyboardState.IsKeyPressed(Key.W),
@@ -49,66 +42,67 @@ public class Window : Engine.Window
         );
 
         float dt = (float)elapsedTime;
-        _followCamera?.UpdateCamera(Camera, dt);
-        _scene?.Update(dt, input, Camera);
-        _gui?.Update(dt);
-    }
+        Scene?.Update(dt, input, _lookDeltaX, _lookDeltaY, _zoomDelta);
+        GUI?.Update(dt);
 
-    protected override void OnMouseMove(IMouse mouse, Vector2 position)
-    {
-        if (_isClosing) return;
-
-        if (mouse.Cursor.CursorMode == CursorMode.Raw)
-        {
-            var deltaX = mouse.Position.X - WindowCenter.X;
-            var deltaY = mouse.Position.Y - WindowCenter.Y;
-
-            mouse.Position = WindowCenter;
-
-            _followCamera?.Rotate(deltaX, deltaY, Camera.Sensitivity);
-        }
-    }
-
-    protected override void OnScroll(IMouse mouse, ScrollWheel wheel)
-    {
-        if (_isClosing) return;
-
-        _followCamera?.AddZoom(wheel.Y);
+        _lookDeltaX = 0f;
+        _lookDeltaY = 0f;
+        _zoomDelta = 0f;
     }
 
     protected override void OnRender(double elapsedTime)
     {
         base.OnRender(elapsedTime);
 
-        _scene?.Draw(GL, Camera);
-        _gui?.Render(this, Camera);
+        if (Scene is not null)
+        {
+            Scene.Draw(GL);
+            GUI?.Render(this);
+        }
+    }
+
+    protected override void OnFramebufferResize(Vector2D<int> newSize)
+    {
+        base.OnFramebufferResize(newSize);
+
+        Scene?.FollowCamera.Camera.ChangeAspectRatio(newSize);
     }
 
     protected override void OnClose()
     {
-        _gui?.Dispose();
-        _scene?.Dispose();
+        GUI?.Dispose();
+        Scene?.Dispose();
 
         base.OnClose();
+    }
+
+    protected override void OnMouseMove(IMouse mouse, Vector2 position)
+    {
+        if (mouse.Cursor.CursorMode != CursorMode.Raw || IsClosing) return;
+
+        _lookDeltaX += mouse.Position.X - WindowCenter.X;
+        _lookDeltaY += mouse.Position.Y - WindowCenter.Y;
+        mouse.Position = WindowCenter;
+    }
+
+    protected override void OnScroll(IMouse mouse, ScrollWheel wheel)
+    {
+        if (IsClosing) return;
+
+        _zoomDelta += wheel.Y;
     }
 
     protected override void OnKeyDown(IKeyboard keyboard, Key key, int arg3)
     {
         base.OnKeyDown(keyboard, key, arg3);
 
-        if (key == Key.Equal)
-        {
-            Camera.ChangeZoom(5f);
-        }
-        if (key == Key.Minus)
-        {
-            Camera.ChangeZoom(-5f);
-        }
+        if (IsClosing) return;
+
         if (key == Key.R)
         {
-            if (_scene is not null)
+            if (Scene is not null)
             {
-                _scene.Player.Position = new Vector3(0f, 2.5f, -2f);
+                Scene.Player.Position = new Vector3(0f, 2.5f, -2f);
             }
         }
     }

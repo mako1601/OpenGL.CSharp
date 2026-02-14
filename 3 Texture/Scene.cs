@@ -7,15 +7,6 @@ namespace Texture;
 
 public sealed class Scene : IDisposable
 {
-    private readonly MeshPrimitive _cube = Cube.Create(
-        Vector3.One,
-        new MeshPrimitiveConfig 
-        {
-            HasNormals = false,
-            HasNormalMap = false,
-            StretchTexture = false
-        }
-    );
     private readonly Mesh _cubeMesh;
     private readonly Material _cubeMaterial;
     private readonly MaterialContext _materialContext = new();
@@ -32,7 +23,15 @@ public sealed class Scene : IDisposable
 
         _cubeMesh = new Mesh(
             gl,
-            _cube,
+            Cube.Create(
+                Vector3.One,
+                new MeshPrimitiveConfig
+                {
+                    HasNormals = false,
+                    HasNormalMap = false,
+                    StretchTexture = false
+                }
+            ),
             new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 5, 0),
             new VertexAttributeDescription(1, 2, VertexAttribPointerType.Float, 5, 3)
         );

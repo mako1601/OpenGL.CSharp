@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using Engine;
+using System.Numerics;
 using Engine.Entities;
 using Engine.Geometry;
 using Engine.Graphics;
@@ -31,12 +30,14 @@ public sealed class Scene : IDisposable
     private readonly PhysicsWorld _physicsWorld = new();
     private readonly List<PhysicsBody> _cubeBodies = [];
     private readonly Player _player;
+    private readonly FollowCameraComponent _followCamera;
     private float _accumulatedTime;
 
     public bool ShowColliders { get; set; } = false;
     public Player Player => _player;
+    public FollowCameraComponent FollowCamera => _followCamera;
 
-    public Scene(GL gl)
+    public Scene(GL gl, float aspectRatio)
     {
         gl.Enable(EnableCap.CullFace);
         gl.CullFace(TriangleFace.Back);
@@ -104,17 +105,26 @@ public sealed class Scene : IDisposable
         CreateArenaColliders();
         CreateCubes();
         _player = CreatePlayer();
+        _followCamera = new FollowCameraComponent(_player, aspectRatio)
+        {
+            HeightOffset = 0.35f
+        };
+        _followCamera.SnapToTarget();
     }
 
-    public void Update(float dt, in PlayerInput input, Camera camera)
+    public void Update(float dt, in PlayerInput input, float lookDeltaX, float lookDeltaY, float zoomDelta)
     {
         dt = Math.Clamp(dt, 0f, MaxFrameDt);
-        _accumulatedTime += dt;
 
+        _followCamera.Rotate(lookDeltaX, lookDeltaY, _followCamera.Camera.Sensitivity);
+        _followCamera.AddZoom(zoomDelta);
+        _followCamera.Update(dt);
+
+        _accumulatedTime += dt;
         int steps = 0;
         while (_accumulatedTime >= FixedTimeStep && steps < MaxPhysicsStepsPerFrame)
         {
-            _player.ApplyInput(input, camera.Front, camera.Right);
+            _player.ApplyInput(input, _followCamera.Camera.Front, _followCamera.Camera.Right);
             _physicsWorld.Step(FixedTimeStep);
             _accumulatedTime -= FixedTimeStep;
             steps++;
@@ -124,15 +134,17 @@ public sealed class Scene : IDisposable
         {
             _accumulatedTime = FixedTimeStep;
         }
+
+        _followCamera.UpdateCameraTransform();
     }
 
-    public void Draw(GL gl, Camera camera)
+    public void Draw(GL gl)
     {
         gl.ClearColor(0.05f, 0.06f, 0.08f, 1f);
         gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-        _materialContext.Set("View", camera.GetViewMatrix());
-        _materialContext.Set("Projection", camera.GetProjectionMatrix());
+        _materialContext.Set("View", _followCamera.Camera.GetViewMatrix());
+        _materialContext.Set("Projection", _followCamera.Camera.GetProjectionMatrix());
 
         _planeMesh.Bind();
         for (int i = 0; i < _planeModels.Length; i++)
@@ -213,50 +225,35 @@ public sealed class Scene : IDisposable
         const float wallHalfThickness = 0.10f;
 
         _physicsWorld.AddBody(
-            new PhysicsBody(
-                new BoxCollider(new Vector3(half, floorHalfHeight, half)),
-                isStatic: true
-            )
+            new PhysicsBody(new BoxCollider(new Vector3(half, floorHalfHeight, half)), isStatic: true)
             {
                 Position = new Vector3(0f, -floorHalfHeight, 0f)
             }
         );
 
         _physicsWorld.AddBody(
-            new PhysicsBody(
-                new BoxCollider(new Vector3(half, WallHeight * 0.5f, wallHalfThickness)),
-                isStatic: true
-            )
+            new PhysicsBody(new BoxCollider(new Vector3(half, WallHeight * 0.5f, wallHalfThickness)), isStatic: true)
             {
                 Position = new Vector3(0f, WallHeight * 0.5f, half + wallHalfThickness)
             }
         );
 
         _physicsWorld.AddBody(
-            new PhysicsBody(
-                new BoxCollider(new Vector3(half, WallHeight * 0.5f, wallHalfThickness)),
-                isStatic: true
-            )
+            new PhysicsBody(new BoxCollider(new Vector3(half, WallHeight * 0.5f, wallHalfThickness)), isStatic: true)
             {
                 Position = new Vector3(0f, WallHeight * 0.5f, -half - wallHalfThickness)
             }
         );
 
         _physicsWorld.AddBody(
-            new PhysicsBody(
-                new BoxCollider(new Vector3(wallHalfThickness, WallHeight * 0.5f, half)),
-                isStatic: true
-            )
+            new PhysicsBody(new BoxCollider(new Vector3(wallHalfThickness, WallHeight * 0.5f, half)), isStatic: true)
             {
                 Position = new Vector3(half + wallHalfThickness, WallHeight * 0.5f, 0f)
             }
         );
 
         _physicsWorld.AddBody(
-            new PhysicsBody(
-                new BoxCollider(new Vector3(wallHalfThickness, WallHeight * 0.5f, half)),
-                isStatic: true
-            )
+            new PhysicsBody(new BoxCollider(new Vector3(wallHalfThickness, WallHeight * 0.5f, half)), isStatic: true)
             {
                 Position = new Vector3(-half - wallHalfThickness, WallHeight * 0.5f, 0f)
             }

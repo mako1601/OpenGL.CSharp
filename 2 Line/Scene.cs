@@ -7,17 +7,6 @@ namespace Line;
 
 public sealed class Scene : IDisposable
 {
-    private readonly MeshPrimitive _cube = Cube.Create(
-        Vector3.One,
-        new MeshPrimitiveConfig 
-        {
-            HasNormals = false,
-            HasUV = false,
-            HasNormalMap = false,
-            StretchTexture = false,
-            PrimitiveType = PrimitiveType.Lines
-        }
-    );
     private readonly Mesh _cubeMesh;
     private readonly Material _lineMaterial;
     private readonly MaterialContext _materialContext = new();
@@ -35,7 +24,17 @@ public sealed class Scene : IDisposable
 
         _cubeMesh = new Mesh(
             gl,
-            _cube,
+            Cube.Create(
+                Vector3.One,
+                new MeshPrimitiveConfig 
+                {
+                    HasNormals = false,
+                    HasUV = false,
+                    HasNormalMap = false,
+                    StretchTexture = false,
+                    PrimitiveType = PrimitiveType.Lines
+                }
+            ),
             new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 3, 0)
         );
 

@@ -15,24 +15,6 @@ public sealed class Scene : IDisposable
         new(new Vector3(0f, 1f,  4.125f), 0.75f, 0.8f, 0.7f),
     ];
 
-    private readonly MeshPrimitive _sphere = Sphere.Create(
-        new Vector3(0.04f),
-        new MeshPrimitiveConfig
-        {
-            HasNormals = false,
-            HasUV = false,
-            HasNormalMap = false
-        }
-    );
-    private readonly MeshPrimitive _plane = Engine.Geometry.Plane.Create(
-        new Vector2(11f),
-        new MeshPrimitiveConfig
-        {
-            HasNormalMap = false,
-            StretchTexture = false
-        }
-    );
-
     private readonly Mesh _lightMesh;
     private readonly Mesh _planeMesh;
 
@@ -57,13 +39,28 @@ public sealed class Scene : IDisposable
 
         _lightMesh = new Mesh(
             gl,
-            _sphere,
+            Sphere.Create(
+                new Vector3(0.04f),
+                new MeshPrimitiveConfig
+                {
+                    HasNormals = false,
+                    HasUV = false,
+                    HasNormalMap = false
+                }
+            ),
             new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 3, 0)
         );
 
         _planeMesh = new Mesh(
             gl,
-            _plane,
+            Engine.Geometry.Plane.Create(
+                new Vector2(11f),
+                new MeshPrimitiveConfig
+                {
+                    HasNormalMap = false,
+                    StretchTexture = false
+                }
+            ),
             new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 8, 0),
             new VertexAttributeDescription(1, 3, VertexAttribPointerType.Float, 8, 3),
             new VertexAttributeDescription(2, 2, VertexAttribPointerType.Float, 8, 6)

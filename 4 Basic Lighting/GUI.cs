@@ -10,19 +10,19 @@ namespace BasicLighting;
 public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene) : IDisposable
 {
     private bool _isDisposed = false;
+    private ImGuiController? _controller = new(gl, window, input);
     private readonly Scene _scene = scene;
-
-    public ImGuiController Controller { get; set; } = new ImGuiController(gl, window, input);
 
     public void Update(float elapsedTime)
     {
-        if (_isDisposed || Controller == null) return;
-        Controller.Update(elapsedTime);
+        if (_isDisposed || _controller == null) return;
+
+        _controller.Update(elapsedTime);
     }
 
     public void Render(Camera camera)
     {
-        if (_isDisposed || Controller == null) return;
+        if (_isDisposed || _controller == null) return;
 
         var cameraPosition = camera.Position;
         var cameraPitch = camera.Pitch;
@@ -85,7 +85,7 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene)
 
         ImGuiNET.ImGui.End();
 
-        Controller.Render();
+        _controller.Render();
 
         _scene.PlaneMaterial.SetProperty("Shininess", shininess);
     }
@@ -94,8 +94,8 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene)
     {
         if (_isDisposed) return;
         _isDisposed = true;
-        Controller?.Dispose();
-        Controller = null;
+        _controller?.Dispose();
+        _controller = null;
         GC.SuppressFinalize(this);
     }
 }
