@@ -126,6 +126,11 @@ public sealed class PhysicsWorld
             Vector3 rvAfterNormal = b.Velocity - a.Velocity;
             Vector3 tangent = rvAfterNormal - Vector3.Dot(rvAfterNormal, manifold.Normal) * manifold.Normal;
 
+            if (MathF.Abs(manifold.Normal.Y) < 0.5f)
+            {
+                tangent.Y = 0f;
+            }
+
             if (tangent.LengthSquared() > 1e-8f)
             {
                 tangent = Vector3.Normalize(tangent);
