@@ -113,8 +113,7 @@ public class Camera
         _up = Vector3.Normalize(Vector3.Cross(_right, _front));
     }
 
-    public Matrix4x4 GetViewMatrix()
-        => Matrix4x4.CreateLookAt(_position, _position + _front, _up);
+    public Matrix4x4 GetViewMatrix() => Matrix4x4.CreateLookAt(_position, _position + _front, _up);
 
     public Matrix4x4 GetProjectionMatrix() =>
         Matrix4x4.CreatePerspectiveFieldOfView(
@@ -134,6 +133,5 @@ public class Camera
         AspectRatio = (float)newWindowSize.X / newWindowSize.Y;
     }
 
-    public void ChangeZoom(float deltaScroll) =>
-        _zoom = Math.Clamp(_zoom - deltaScroll, 60f, 120f);
+    public void ChangeZoom(float deltaScroll) => _zoom = Math.Clamp(_zoom - deltaScroll, 60f, 120f);
 }

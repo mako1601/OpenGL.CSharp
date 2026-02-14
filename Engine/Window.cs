@@ -15,12 +15,19 @@ public class Window
     private double _elapsedTime;
     private readonly double _updateInterval = 0.5d;
 
-    protected GL GL { get; private set; }
+    private GL? _gl;
+    private IInputContext? _inputContext;
+    private IKeyboard? _keyboardState;
+    private IMouse? _mouseState;
+
+    protected GL GL => _gl ?? throw new InvalidOperationException("GL is not initialized. OnLoad has not completed.");
     protected IWindow WindowState { get; private set; }
-    protected IInputContext InputContext { get; private set; }
-    protected IKeyboard KeyboardState { get; private set; }
-    protected IMouse MouseState { get; private set; }
+    protected IInputContext InputContext => _inputContext ?? throw new InvalidOperationException("InputContext is not initialized. OnLoad has not completed.");
+    protected IKeyboard KeyboardState => _keyboardState ?? throw new InvalidOperationException("Keyboard is not initialized. OnLoad has not completed.");
+    protected IMouse MouseState => _mouseState ?? throw new InvalidOperationException("Mouse is not initialized. OnLoad has not completed.");
+
     protected Camera Camera { get; set; }
+    protected virtual bool UseDefaultCameraControls => true;
     protected Vector2 WindowCenter => new(WindowState.Size.X / 2f, WindowState.Size.Y / 2f);
     public bool IsFocused { get; protected set; }
     public double FPS => _fps;
@@ -63,25 +70,35 @@ public class Window
 
     protected virtual void OnLoad()
     {
-        GL = GL.GetApi(WindowState);
+        _gl = GL.GetApi(WindowState);
 
         Console.WriteLine($"Vendor: {GL.GetStringS(GLEnum.Vendor)}");
         Console.WriteLine($"Renderer: {GL.GetStringS(GLEnum.Renderer)}");
         Console.WriteLine($"Driver version: {GL.GetStringS(GLEnum.Version)}");
         Console.WriteLine($"API: {WindowState.API.API} {WindowState.API.Profile} {WindowState.API.Version.MajorVersion}.{WindowState.API.Version.MinorVersion}");
 
-        InputContext = WindowState.CreateInput();
+        _inputContext = WindowState.CreateInput();
 
-        KeyboardState = InputContext.Keyboards[0];
-        foreach (var keyboard in InputContext.Keyboards)
+        if (_inputContext.Keyboards.Count == 0)
+        {
+            throw new InvalidOperationException("No keyboard device found.");
+        }
+
+        _keyboardState = _inputContext.Keyboards[0];
+        foreach (var keyboard in _inputContext.Keyboards)
         {
             keyboard.KeyChar += OnKeyChar;
             keyboard.KeyDown += OnKeyDown;
             keyboard.KeyUp += OnKeyUp;
         }
 
-        MouseState = InputContext.Mice[0];
-        foreach (var mouse in InputContext.Mice)
+        if (_inputContext.Mice.Count == 0)
+        {
+            throw new InvalidOperationException("No mouse device found.");
+        }
+
+        _mouseState = _inputContext.Mice[0];
+        foreach (var mouse in _inputContext.Mice)
         {
             mouse.Cursor.CursorMode = CursorMode.Normal;
 
@@ -104,39 +121,42 @@ public class Window
             return;
         }
 
-        Vector3 direction = Vector3.Zero;
+        if (UseDefaultCameraControls)
+        {
+            Vector3 direction = Vector3.Zero;
 
-        if (KeyboardState.IsKeyPressed(Key.W))
-        {
-            direction += Vector3.Normalize(Vector3.Cross(Camera.Right, -Vector3.UnitY));
-        }
-        if (KeyboardState.IsKeyPressed(Key.S))
-        {
-            direction -= Vector3.Normalize(Vector3.Cross(Camera.Right, -Vector3.UnitY));
-        }
-        if (KeyboardState.IsKeyPressed(Key.A))
-        {
-            direction -= Camera.Right;
-        }
-        if (KeyboardState.IsKeyPressed(Key.D))
-        {
-            direction += Camera.Right;
-        }
-        if (KeyboardState.IsKeyPressed(Key.Space))
-        {
-            direction += Vector3.UnitY;
-        }
-        if (KeyboardState.IsKeyPressed(Key.ShiftLeft))
-        {
-            direction -= Vector3.UnitY;
-        }
+            if (KeyboardState.IsKeyPressed(Key.W))
+            {
+                direction += Vector3.Normalize(Vector3.Cross(Camera.Right, -Vector3.UnitY));
+            }
+            if (KeyboardState.IsKeyPressed(Key.S))
+            {
+                direction -= Vector3.Normalize(Vector3.Cross(Camera.Right, -Vector3.UnitY));
+            }
+            if (KeyboardState.IsKeyPressed(Key.A))
+            {
+                direction -= Camera.Right;
+            }
+            if (KeyboardState.IsKeyPressed(Key.D))
+            {
+                direction += Camera.Right;
+            }
+            if (KeyboardState.IsKeyPressed(Key.Space))
+            {
+                direction += Vector3.UnitY;
+            }
+            if (KeyboardState.IsKeyPressed(Key.ShiftLeft))
+            {
+                direction -= Vector3.UnitY;
+            }
 
-        if (direction != Vector3.Zero)
-        {
-            direction = Vector3.Normalize(direction);
-        }
+            if (direction != Vector3.Zero)
+            {
+                direction = Vector3.Normalize(direction);
+            }
 
-        Camera.Position += direction * (float)elapsedTime * Camera.Speed;
+            Camera.Position += direction * (float)elapsedTime * Camera.Speed;
+        }
 
         _elapsedTime += elapsedTime;
         _frameCount++;
@@ -181,25 +201,32 @@ public class Window
 
         _isClosing = true;
 
-        foreach (var k in InputContext.Keyboards)
+        if (_inputContext is not null)
         {
-            k.KeyChar -= OnKeyChar;
-            k.KeyDown -= OnKeyDown;
-            k.KeyUp -= OnKeyUp;
+            foreach (var k in _inputContext.Keyboards)
+            {
+                k.KeyChar -= OnKeyChar;
+                k.KeyDown -= OnKeyDown;
+                k.KeyUp -= OnKeyUp;
+            }
+
+            foreach (var mouse in _inputContext.Mice)
+            {
+                mouse.Click -= OnClick;
+                mouse.DoubleClick -= OnDoubleClick;
+                mouse.MouseDown -= OnMouseDown;
+                mouse.MouseMove -= OnMouseMove;
+                mouse.MouseUp -= OnMouseUp;
+                mouse.Scroll -= OnScroll;
+            }
         }
 
-        foreach (var mouse in InputContext.Mice)
-        {
-            mouse.Click -= OnClick;
-            mouse.DoubleClick -= OnDoubleClick;
-            mouse.MouseDown -= OnMouseDown;
-            mouse.MouseMove -= OnMouseMove;
-            mouse.MouseUp -= OnMouseUp;
-            mouse.Scroll -= OnScroll;
-        }
-
-        InputContext?.Dispose();
-        GL?.Dispose();
+        _inputContext?.Dispose();
+        _inputContext = null;
+        _keyboardState = null;
+        _mouseState = null;
+        _gl?.Dispose();
+        _gl = null;
     }
 
     #region Input
@@ -231,7 +258,7 @@ public class Window
     {
         if (_isClosing) return;
 
-        if (mouse.Cursor.CursorMode == CursorMode.Raw)
+        if (UseDefaultCameraControls && mouse.Cursor.CursorMode == CursorMode.Raw)
         {
             var deltaX = mouse.Position.X - WindowCenter.X;
             var deltaY = mouse.Position.Y - WindowCenter.Y;
@@ -251,7 +278,10 @@ public class Window
     {
         if (_isClosing) return;
 
-        Camera.ChangeZoom(wheel.Y);
+        if (UseDefaultCameraControls)
+        {
+            Camera.ChangeZoom(wheel.Y);
+        }
     }
 
     protected virtual void OnKeyChar(IKeyboard keyboard, char arg2) { }

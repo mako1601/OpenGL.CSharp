@@ -4,7 +4,7 @@ namespace Engine.Geometry;
 
 public static class Cylinder
 {
-    public static MeshPrimitive Create(Vector3 size, MeshPrimitiveConfig config = null)
+    public static MeshPrimitive Create(Vector3 size, MeshPrimitiveConfig? config = null)
     {
         if (size.X <= 0 || size.Y <= 0 || size.Z <= 0)
         {

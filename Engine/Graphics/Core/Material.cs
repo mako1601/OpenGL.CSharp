@@ -99,7 +99,7 @@ public sealed class Material(ShaderProgram shader) : IDisposable
     /// </summary>
     public bool TryGetProperty<T>(string propertyName, out T value)
     {
-        value = default;
+        value = default!;
 
         if (!_properties.TryGetValue(propertyName, out var uniformName))
         {
@@ -132,7 +132,7 @@ public sealed class Material(ShaderProgram shader) : IDisposable
     /// 3) values from the context by key,
     /// 4) override parameters from <see cref="MaterialPropertyBlock"/>.
     /// </summary>
-    public void Apply(MaterialContext context = null, MaterialPropertyBlock overrides = null)
+    public void Apply(MaterialContext? context = null, MaterialPropertyBlock? overrides = null)
     {
         Shader.Use();
 
