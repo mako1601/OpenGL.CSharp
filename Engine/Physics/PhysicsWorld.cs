@@ -5,6 +5,10 @@ namespace Engine.Physics;
 
 public sealed class PhysicsWorld
 {
+    private const int SolverIterations = 8;
+    private const float PositionalCorrectionPercent = 0.95f;
+    private const float PositionalCorrectionSlop = 0.0005f;
+
     private readonly List<PhysicsBody> _bodies = [];
 
     public IReadOnlyList<PhysicsBody> Bodies => _bodies;
@@ -30,23 +34,26 @@ public sealed class PhysicsWorld
             body.Position += body.Velocity * dt;
         }
 
-        for (int i = 0; i < _bodies.Count; i++)
+        for (int iteration = 0; iteration < SolverIterations; iteration++)
         {
-            var a = _bodies[i];
-            for (int j = i + 1; j < _bodies.Count; j++)
+            for (int i = 0; i < _bodies.Count; i++)
             {
-                var b = _bodies[j];
-
-                if (a.IsStatic && b.IsStatic) continue;
-
-                if (a.Collider is not BoxCollider boxA || b.Collider is not BoxCollider boxB)
+                var a = _bodies[i];
+                for (int j = i + 1; j < _bodies.Count; j++)
                 {
-                    continue;
-                }
+                    var b = _bodies[j];
 
-                if (TryCollide(boxA, boxB, out var manifold))
-                {
-                    ResolveCollision(a, b, manifold);
+                    if (a.IsStatic && b.IsStatic) continue;
+
+                    if (a.Collider is not BoxCollider boxA || b.Collider is not BoxCollider boxB)
+                    {
+                        continue;
+                    }
+
+                    if (TryCollide(boxA, boxB, out var manifold))
+                    {
+                        ResolveCollision(a, b, manifold);
+                    }
                 }
             }
         }
@@ -117,9 +124,9 @@ public sealed class PhysicsWorld
             }
         }
 
-        const float percent = 0.8f;
-        const float slop = 0.0001f;
-        float correctionMagnitude = MathF.Max(manifold.Penetration - slop, 0f) / invMassSum * percent;
+        float correctionMagnitude = MathF.Max(manifold.Penetration - PositionalCorrectionSlop, 0f)
+            / invMassSum
+            * PositionalCorrectionPercent;
         Vector3 correction = correctionMagnitude * manifold.Normal;
 
         if (!a.IsStatic)
