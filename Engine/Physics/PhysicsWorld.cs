@@ -45,6 +45,8 @@ public sealed class PhysicsWorld
 
                     if (a.IsStatic && b.IsStatic) continue;
 
+                    if (!CanBodiesCollide(a, b)) continue;
+
                     if (a.Collider is not BoxCollider boxA || b.Collider is not BoxCollider boxB)
                     {
                         continue;
@@ -94,6 +96,13 @@ public sealed class PhysicsWorld
         float normalZ = delta.Z >= 0f ? 1f : -1f;
         manifold = new CollisionManifold(new Vector3(0f, 0f, normalZ), overlap.Z);
         return true;
+    }
+
+    private static bool CanBodiesCollide(PhysicsBody a, PhysicsBody b)
+    {
+        bool aWantsB = (a.CollisionMask & b.CollisionLayer) != 0u;
+        bool bWantsA = (b.CollisionMask & a.CollisionLayer) != 0u;
+        return aWantsB && bWantsA;
     }
 
     private static void ResolveCollision(PhysicsBody a, PhysicsBody b, CollisionManifold manifold)

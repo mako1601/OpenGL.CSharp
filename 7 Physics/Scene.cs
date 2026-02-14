@@ -227,35 +227,45 @@ public sealed class Scene : IDisposable
         _physicsWorld.AddBody(
             new PhysicsBody(new BoxCollider(new Vector3(half, floorHalfHeight, half)), isStatic: true)
             {
-                Position = new Vector3(0f, -floorHalfHeight, 0f)
+                Position = new Vector3(0f, -floorHalfHeight, 0f),
+                CollisionLayer = CollisionLayers.StaticWorld,
+                CollisionMask = CollisionLayers.DynamicBody | CollisionLayers.Player
             }
         );
 
         _physicsWorld.AddBody(
             new PhysicsBody(new BoxCollider(new Vector3(half, WallHeight * 0.5f, wallHalfThickness)), isStatic: true)
             {
-                Position = new Vector3(0f, WallHeight * 0.5f, half + wallHalfThickness)
+                Position = new Vector3(0f, WallHeight * 0.5f, half + wallHalfThickness),
+                CollisionLayer = CollisionLayers.StaticWorld,
+                CollisionMask = CollisionLayers.DynamicBody | CollisionLayers.Player
             }
         );
 
         _physicsWorld.AddBody(
             new PhysicsBody(new BoxCollider(new Vector3(half, WallHeight * 0.5f, wallHalfThickness)), isStatic: true)
             {
-                Position = new Vector3(0f, WallHeight * 0.5f, -half - wallHalfThickness)
+                Position = new Vector3(0f, WallHeight * 0.5f, -half - wallHalfThickness),
+                CollisionLayer = CollisionLayers.StaticWorld,
+                CollisionMask = CollisionLayers.DynamicBody | CollisionLayers.Player
             }
         );
 
         _physicsWorld.AddBody(
             new PhysicsBody(new BoxCollider(new Vector3(wallHalfThickness, WallHeight * 0.5f, half)), isStatic: true)
             {
-                Position = new Vector3(half + wallHalfThickness, WallHeight * 0.5f, 0f)
+                Position = new Vector3(half + wallHalfThickness, WallHeight * 0.5f, 0f),
+                CollisionLayer = CollisionLayers.StaticWorld,
+                CollisionMask = CollisionLayers.DynamicBody | CollisionLayers.Player
             }
         );
 
         _physicsWorld.AddBody(
             new PhysicsBody(new BoxCollider(new Vector3(wallHalfThickness, WallHeight * 0.5f, half)), isStatic: true)
             {
-                Position = new Vector3(-half - wallHalfThickness, WallHeight * 0.5f, 0f)
+                Position = new Vector3(-half - wallHalfThickness, WallHeight * 0.5f, 0f),
+                CollisionLayer = CollisionLayers.StaticWorld,
+                CollisionMask = CollisionLayers.DynamicBody | CollisionLayers.Player
             }
         );
     }
@@ -272,7 +282,9 @@ public sealed class Scene : IDisposable
                 Position = new Vector3(x, 1.35f, 0f),
                 Velocity = new Vector3(1.6f - i * 1.0f, 0f, 0.45f * (i - 1.5f)),
                 Mass = 1f,
-                Restitution = 0.45f
+                Restitution = 0.45f,
+                CollisionLayer = CollisionLayers.DynamicBody,
+                CollisionMask = CollisionLayers.StaticWorld | CollisionLayers.DynamicBody | CollisionLayers.Player
             };
 
             _physicsWorld.AddBody(body);
@@ -286,7 +298,9 @@ public sealed class Scene : IDisposable
         {
             Position = new Vector3(0f, 1.35f, -2f),
             Mass = 1f,
-            Restitution = 0.05f
+            Restitution = 0.05f,
+            CollisionLayer = CollisionLayers.Player,
+            CollisionMask = CollisionLayers.StaticWorld | CollisionLayers.DynamicBody
         };
 
         _physicsWorld.AddBody(body);

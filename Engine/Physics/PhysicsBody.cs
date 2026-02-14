@@ -19,6 +19,8 @@ public sealed class PhysicsBody
     public float Restitution { get; set; } = 0.15f;
     public float StaticFriction { get; set; } = 0.6f;
     public float DynamicFriction { get; set; } = 0.4f;
+    public uint CollisionLayer { get; set; } = CollisionLayers.Default;
+    public uint CollisionMask { get; set; } = uint.MaxValue;
     public bool IsStatic { get; }
     public Collider Collider { get; }
     public bool IsGrounded { get; internal set; }
