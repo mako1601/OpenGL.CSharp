@@ -13,6 +13,7 @@ public sealed class Scene : IDisposable
     private const float ArenaSize = 6f;
     private const float WallHeight = 0.75f;
     private const float CubeSize = 0.5f;
+    private const float SphereRadius = 0.25f;
     private const float FixedTimeStep = 1f / 120f;
     private const float MaxVisualSpeed = 8f;
     private const float MaxFrameDt = 0.1f;
@@ -20,6 +21,7 @@ public sealed class Scene : IDisposable
 
     private readonly Mesh _planeMesh;
     private readonly Mesh _cubeMesh;
+    private readonly Mesh _sphereMesh;
     private readonly Mesh _colliderMesh;
     private readonly Material _flatMaterial;
     private readonly MaterialContext _materialContext = new();
@@ -29,13 +31,16 @@ public sealed class Scene : IDisposable
 
     private readonly PhysicsWorld _physicsWorld = new();
     private readonly List<PhysicsBody> _cubeBodies = [];
-    private readonly Player _player;
+    private readonly List<PhysicsBody> _sphereBodies = [];
+    private Player _player;
     private readonly FollowCameraComponent _followCamera;
+    private ColliderType _playerShape = ColliderType.Box;
     private float _accumulatedTime;
 
     public bool ShowColliders { get; set; } = false;
     public Player Player => _player;
     public FollowCameraComponent FollowCamera => _followCamera;
+    public ColliderType CurrentPlayerShape => _playerShape;
 
     public Scene(GL gl, float aspectRatio)
     {
@@ -75,6 +80,20 @@ public sealed class Scene : IDisposable
             new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 3, 0)
         );
 
+        _sphereMesh = new Mesh(
+            gl,
+            Sphere.Create(
+                new Vector3(SphereRadius),
+                new MeshPrimitiveConfig
+                {
+                    HasNormals = false,
+                    HasUV = false,
+                    HasNormalMap = false
+                }
+            ),
+            new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 3, 0)
+        );
+
         _colliderMesh = new Mesh(
             gl,
             Cube.Create(
@@ -104,6 +123,7 @@ public sealed class Scene : IDisposable
 
         CreateArenaColliders();
         CreateCubes();
+        CreateSpheres();
         _player = CreatePlayer();
         _followCamera = new FollowCameraComponent(_player, aspectRatio)
         {
@@ -162,36 +182,69 @@ public sealed class Scene : IDisposable
             DrawCube(gl, cubeBody, ColorFromSpeed(cubeBody.Velocity.Length()));
         }
 
-        DrawCube(gl, _player.Body, new Vector3(0.95f, 0.95f, 0.20f));
+        if (_player.Body.Collider is BoxCollider)
+        {
+            DrawCube(gl, _player.Body, new Vector3(0.95f, 0.95f, 0.20f));
+        }
         _cubeMesh.Unbind();
+
+        _sphereMesh.Bind();
+        foreach (var sphereBody in _sphereBodies)
+        {
+            DrawSphere(gl, sphereBody, ColorFromSpeed(sphereBody.Velocity.Length()));
+        }
+
+        if (_player.Body.Collider is SphereCollider)
+        {
+            DrawSphere(gl, _player.Body, new Vector3(0.95f, 0.95f, 0.20f));
+        }
+        _sphereMesh.Unbind();
 
         if (!ShowColliders) return;
 
-        _colliderMesh.Bind();
         foreach (var body in _physicsWorld.Bodies)
         {
-            if (body.Collider is not BoxCollider boxCollider) continue;
-
-            Matrix4x4 model =
-                Matrix4x4.CreateScale(boxCollider.HalfExtents * 2f) *
-                Matrix4x4.CreateTranslation(body.Position + boxCollider.Offset);
-
             Vector3 debugColor = body.IsStatic
                 ? new Vector3(0.15f, 1.00f, 0.35f)
                 : new Vector3(1.00f, 1.00f, 1.00f);
 
-            _drawBlock.Set("uModel", model);
-            _flatMaterial.SetProperty("Color", debugColor);
-            _flatMaterial.Apply(_materialContext, _drawBlock);
-            _colliderMesh.Draw(gl, PrimitiveType.Lines);
+            if (body.Collider is BoxCollider boxCollider)
+            {
+                Matrix4x4 model =
+                    Matrix4x4.CreateScale(boxCollider.HalfExtents * 2f) *
+                    Matrix4x4.CreateTranslation(body.Position + boxCollider.Offset);
+
+                _colliderMesh.Bind();
+                _drawBlock.Set("uModel", model);
+                _flatMaterial.SetProperty("Color", debugColor);
+                _flatMaterial.Apply(_materialContext, _drawBlock);
+                _colliderMesh.Draw(gl, PrimitiveType.Lines);
+                _colliderMesh.Unbind();
+            }
+            else if (body.Collider is SphereCollider sphereCollider)
+            {
+                Matrix4x4 model =
+                    Matrix4x4.CreateScale(sphereCollider.Radius / SphereRadius) *
+                    Matrix4x4.CreateTranslation(body.Position + sphereCollider.Offset);
+
+                _drawBlock.Set("uModel", model);
+                _flatMaterial.SetProperty("Color", debugColor);
+                _flatMaterial.Apply(_materialContext, _drawBlock);
+
+                _sphereMesh.Bind();
+                gl.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
+                _sphereMesh.Draw(gl);
+                gl.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
+                _sphereMesh.Unbind();
+            }
         }
-        _colliderMesh.Unbind();
     }
 
     public void Dispose()
     {
         _planeMesh?.Dispose();
         _cubeMesh?.Dispose();
+        _sphereMesh?.Dispose();
         _colliderMesh?.Dispose();
         _flatMaterial?.Dispose();
         GC.SuppressFinalize(this);
@@ -207,6 +260,16 @@ public sealed class Scene : IDisposable
         _flatMaterial.SetProperty("Color", color);
         _flatMaterial.Apply(_materialContext, _drawBlock);
         _cubeMesh.Draw(gl);
+    }
+
+    private void DrawSphere(GL gl, PhysicsBody body, Vector3 color)
+    {
+        Matrix4x4 model = Matrix4x4.CreateTranslation(body.Position);
+
+        _drawBlock.Set("uModel", model);
+        _flatMaterial.SetProperty("Color", color);
+        _flatMaterial.Apply(_materialContext, _drawBlock);
+        _sphereMesh.Draw(gl);
     }
 
     private static Vector3 ColorFromSpeed(float speed)
@@ -292,22 +355,81 @@ public sealed class Scene : IDisposable
         }
     }
 
+    private void CreateSpheres()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            float x = -1.8f + i * 1.2f;
+            var body = new PhysicsBody(new SphereCollider(SphereRadius))
+            {
+                Position = new Vector3(x, 2.25f, 1.6f),
+                Velocity = new Vector3(1.1f - i * 0.7f, 0f, -0.35f * (i - 1.5f)),
+                Mass = 1f,
+                Restitution = 0.55f,
+                CollisionLayer = CollisionLayers.DynamicBody,
+                CollisionMask = CollisionLayers.StaticWorld | CollisionLayers.DynamicBody | CollisionLayers.Player
+            };
+
+            _physicsWorld.AddBody(body);
+            _sphereBodies.Add(body);
+        }
+    }
+
     private Player CreatePlayer()
     {
-        var body = new PhysicsBody(new BoxCollider(new Vector3(CubeSize * 0.5f)))
+        var body = CreatePlayerBody(_playerShape);
+        _physicsWorld.AddBody(body);
+
+        return new Player(body)
+        {
+            MoveSpeed = 4.5f,
+            JumpSpeed = 5.5f
+        };
+    }
+
+    public void SetPlayerShape(ColliderType shape)
+    {
+        if (_playerShape == shape) return;
+
+        PhysicsBody oldBody = _player.Body;
+        var newBody = CreatePlayerBody(shape);
+        newBody.Position = oldBody.Position;
+        newBody.Velocity = oldBody.Velocity;
+        newBody.Gravity = oldBody.Gravity;
+        newBody.Mass = oldBody.Mass;
+        newBody.Restitution = oldBody.Restitution;
+        newBody.StaticFriction = oldBody.StaticFriction;
+        newBody.DynamicFriction = oldBody.DynamicFriction;
+        newBody.CollisionLayer = oldBody.CollisionLayer;
+        newBody.CollisionMask = oldBody.CollisionMask;
+
+        _physicsWorld.RemoveBody(oldBody);
+        _physicsWorld.AddBody(newBody);
+
+        _player = new Player(newBody)
+        {
+            MoveSpeed = _player.MoveSpeed,
+            JumpSpeed = _player.JumpSpeed
+        };
+        _playerShape = shape;
+        _followCamera.SetTarget(_player);
+    }
+
+    private static PhysicsBody CreatePlayerBody(ColliderType shape)
+    {
+        Collider collider = shape switch
+        {
+            ColliderType.Sphere => new SphereCollider(SphereRadius),
+            _ => new BoxCollider(new Vector3(CubeSize * 0.5f))
+        };
+
+        return new PhysicsBody(collider)
         {
             Position = new Vector3(0f, 1.35f, -2f),
             Mass = 1f,
             Restitution = 0.05f,
             CollisionLayer = CollisionLayers.Player,
             CollisionMask = CollisionLayers.StaticWorld | CollisionLayers.DynamicBody
-        };
-
-        _physicsWorld.AddBody(body);
-        return new Player(body)
-        {
-            MoveSpeed = 4.5f,
-            JumpSpeed = 5.5f
         };
     }
 

@@ -4,7 +4,7 @@ namespace Engine.Entities;
 
 public sealed class FollowCameraComponent
 {
-    private readonly Player _target;
+    private Player _target;
 
     public FollowCameraComponent(Player target, float aspectRatio)
     {
@@ -30,6 +30,12 @@ public sealed class FollowCameraComponent
     public void AddZoom(float scrollY, float zoomStep = 0.35f)
     {
         DistanceTarget = Math.Clamp(DistanceTarget - scrollY * zoomStep, MinDistance, MaxDistance);
+    }
+
+    public void SetTarget(Player target)
+    {
+        _target = target ?? throw new ArgumentNullException(nameof(target));
+        UpdateCameraTransform();
     }
 
     public void SnapToTarget()
