@@ -14,6 +14,9 @@ public sealed class Scene : IDisposable
     private const float WallHeight = 0.75f;
     private const float CubeSize = 0.5f;
     private const float SphereRadius = 0.25f;
+    private const float CapsuleRadius = 0.25f;
+    private const float CapsuleHalfHeight = 0.30f;
+    private const float CapsuleHeight = (CapsuleHalfHeight + CapsuleRadius) * 2f;
     private const float FixedTimeStep = 1f / 120f;
     private const float MaxVisualSpeed = 8f;
     private const float MaxFrameDt = 0.1f;
@@ -22,16 +25,19 @@ public sealed class Scene : IDisposable
     private readonly Mesh _planeMesh;
     private readonly Mesh _cubeMesh;
     private readonly Mesh _sphereMesh;
+    private readonly Mesh _capsuleMesh;
     private readonly Mesh _colliderMesh;
     private readonly Material _flatMaterial;
     private readonly MaterialContext _materialContext = new();
     private readonly MaterialPropertyBlock _drawBlock = new();
     private readonly Matrix4x4[] _planeModels;
     private readonly Vector3[] _planeColors;
+    private readonly Vector3 _playerColors = new(1f, 0.7f, 0f);
 
     private readonly PhysicsWorld _physicsWorld = new();
     private readonly List<PhysicsBody> _cubeBodies = [];
     private readonly List<PhysicsBody> _sphereBodies = [];
+    private readonly List<PhysicsBody> _capsuleBodies = [];
     private Player _player;
     private readonly FollowCameraComponent _followCamera;
     private ColliderType _playerShape = ColliderType.Box;
@@ -94,6 +100,20 @@ public sealed class Scene : IDisposable
             new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 3, 0)
         );
 
+        _capsuleMesh = new Mesh(
+            gl,
+            Capsule.Create(
+                new Vector3(CapsuleRadius * 2f, CapsuleHeight, CapsuleRadius * 2f),
+                new MeshPrimitiveConfig
+                {
+                    HasNormals = false,
+                    HasUV = false,
+                    HasNormalMap = false
+                }
+            ),
+            new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 3, 0)
+        );
+
         _colliderMesh = new Mesh(
             gl,
             Cube.Create(
@@ -124,6 +144,7 @@ public sealed class Scene : IDisposable
         CreateArenaColliders();
         CreateCubes();
         CreateSpheres();
+        CreateCapsules();
         _player = CreatePlayer();
         _followCamera = new FollowCameraComponent(_player, aspectRatio)
         {
@@ -184,7 +205,7 @@ public sealed class Scene : IDisposable
 
         if (_player.Body.Collider is BoxCollider)
         {
-            DrawCube(gl, _player.Body, new Vector3(0.95f, 0.95f, 0.20f));
+            DrawCube(gl, _player.Body, _playerColors);
         }
         _cubeMesh.Unbind();
 
@@ -196,9 +217,24 @@ public sealed class Scene : IDisposable
 
         if (_player.Body.Collider is SphereCollider)
         {
-            DrawSphere(gl, _player.Body, new Vector3(0.95f, 0.95f, 0.20f));
+            DrawSphere(gl, _player.Body, _playerColors);
         }
         _sphereMesh.Unbind();
+
+        _capsuleMesh.Bind();
+        foreach (var capsuleBody in _capsuleBodies)
+        {
+            if (capsuleBody.Collider is CapsuleCollider capsuleCollider)
+            {
+                DrawCapsule(gl, capsuleBody, capsuleCollider, ColorFromSpeed(capsuleBody.Velocity.Length()));
+            }
+        }
+
+        if (_player.Body.Collider is CapsuleCollider playerCapsuleCollider)
+        {
+            DrawCapsule(gl, _player.Body, playerCapsuleCollider, _playerColors);
+        }
+        _capsuleMesh.Unbind();
 
         if (!ShowColliders) return;
 
@@ -237,6 +273,24 @@ public sealed class Scene : IDisposable
                 gl.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
                 _sphereMesh.Unbind();
             }
+            else if (body.Collider is CapsuleCollider capsuleCollider)
+            {
+                float radiusScale = capsuleCollider.Radius / CapsuleRadius;
+                float heightScale = (capsuleCollider.HalfHeight + capsuleCollider.Radius) / (CapsuleHalfHeight + CapsuleRadius);
+                Matrix4x4 model =
+                    Matrix4x4.CreateScale(radiusScale, heightScale, radiusScale) *
+                    Matrix4x4.CreateTranslation(body.Position + capsuleCollider.Offset);
+
+                _drawBlock.Set("uModel", model);
+                _flatMaterial.SetProperty("Color", debugColor);
+                _flatMaterial.Apply(_materialContext, _drawBlock);
+
+                _capsuleMesh.Bind();
+                gl.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
+                _capsuleMesh.Draw(gl);
+                gl.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
+                _capsuleMesh.Unbind();
+            }
         }
     }
 
@@ -245,6 +299,7 @@ public sealed class Scene : IDisposable
         _planeMesh?.Dispose();
         _cubeMesh?.Dispose();
         _sphereMesh?.Dispose();
+        _capsuleMesh?.Dispose();
         _colliderMesh?.Dispose();
         _flatMaterial?.Dispose();
         GC.SuppressFinalize(this);
@@ -270,6 +325,20 @@ public sealed class Scene : IDisposable
         _flatMaterial.SetProperty("Color", color);
         _flatMaterial.Apply(_materialContext, _drawBlock);
         _sphereMesh.Draw(gl);
+    }
+
+    private void DrawCapsule(GL gl, PhysicsBody body, CapsuleCollider collider, Vector3 color)
+    {
+        float radiusScale = collider.Radius / CapsuleRadius;
+        float heightScale = (collider.HalfHeight + collider.Radius) / (CapsuleHalfHeight + CapsuleRadius);
+        Matrix4x4 model =
+            Matrix4x4.CreateScale(radiusScale, heightScale, radiusScale) *
+            Matrix4x4.CreateTranslation(body.Position + collider.Offset);
+
+        _drawBlock.Set("uModel", model);
+        _flatMaterial.SetProperty("Color", color);
+        _flatMaterial.Apply(_materialContext, _drawBlock);
+        _capsuleMesh.Draw(gl);
     }
 
     private static Vector3 ColorFromSpeed(float speed)
@@ -375,6 +444,26 @@ public sealed class Scene : IDisposable
         }
     }
 
+    private void CreateCapsules()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            float x = -1.2f + i * 1.2f;
+            var body = new PhysicsBody(new CapsuleCollider(CapsuleRadius, CapsuleHalfHeight))
+            {
+                Position = new Vector3(x, 3.0f, -1.2f),
+                Velocity = new Vector3(0.45f * (1f - i), 0f, 0.55f * (i - 1f)),
+                Mass = 1f,
+                Restitution = 0.25f,
+                CollisionLayer = CollisionLayers.DynamicBody,
+                CollisionMask = CollisionLayers.StaticWorld | CollisionLayers.DynamicBody | CollisionLayers.Player
+            };
+
+            _physicsWorld.AddBody(body);
+            _capsuleBodies.Add(body);
+        }
+    }
+
     private Player CreatePlayer()
     {
         var body = CreatePlayerBody(_playerShape);
@@ -420,6 +509,7 @@ public sealed class Scene : IDisposable
         Collider collider = shape switch
         {
             ColliderType.Sphere => new SphereCollider(SphereRadius),
+            ColliderType.Capsule => new CapsuleCollider(CapsuleRadius, CapsuleHalfHeight),
             _ => new BoxCollider(new Vector3(CubeSize * 0.5f))
         };
 

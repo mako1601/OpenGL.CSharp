@@ -42,7 +42,7 @@ public class Window : Engine.Window
         );
 
         float dt = (float)elapsedTime;
-        Scene?.Update(dt, input, _lookDeltaX, _lookDeltaY, _zoomDelta);
+        Scene?.Update(dt, MouseState.Cursor.CursorMode == CursorMode.Raw ? input : new PlayerInput(), _lookDeltaX, _lookDeltaY, _zoomDelta);
         GUI?.Update(dt);
 
         _lookDeltaX = 0f;
@@ -87,7 +87,7 @@ public class Window : Engine.Window
 
     protected override void OnScroll(IMouse mouse, ScrollWheel wheel)
     {
-        if (IsClosing) return;
+        if (mouse.Cursor.CursorMode != CursorMode.Raw || IsClosing) return;
 
         _zoomDelta += wheel.Y;
     }

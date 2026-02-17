@@ -12,7 +12,7 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene)
     private bool _isDisposed;
     private ImGuiController? _controller = new(gl, window, input);
     private readonly Scene _scene = scene;
-    private static readonly string[] _playerShapeItems = ["Cube", "Sphere"];
+    private static readonly string[] _playerShapeItems = ["Cube", "Sphere", "Capsule"];
 
     public void Update(float elapsedTime)
     {
