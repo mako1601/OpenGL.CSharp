@@ -1,0 +1,30 @@
+﻿{
+  "shader": {
+    "vertex": "base_light.glslv",
+    "fragment": "base_light.glslf"
+  },
+  "textures": [
+    {
+      "uniform": "uMaterial.diffuse",
+      "file": "brickwall.jpg",
+      "slot": 0
+    },
+    {
+      "uniform": "uMaterial.specular",
+      "file": "brickwall_specular.jpg",
+      "slot": 1
+    }
+  ],
+  "floats": {
+    "uMaterial.shininess": 32.0
+  },
+  "semantics": {
+    "uModel": "Model",
+    "uView": "View",
+    "uProjection": "Projection",
+    "uViewPosition": "CameraPosition"
+  },
+  "properties": {
+    "Shininess": "uMaterial.shininess"
+  }
+}

@@ -16,6 +16,10 @@ public static class Cylinder
         float radiusX = 0.5f * size.X;
         float radiusZ = 0.5f * size.Z;
         float height = size.Y;
+        float averageRadius = 0.5f * (radiusX + radiusZ);
+        float uWorldScale = 2f * MathF.PI * averageRadius;
+        float uWrapScale = MathF.Max(1f, MathF.Round(uWorldScale));
+        float vWorldScale = height;
 
         int vertexSize = 3;
         if (config.HasNormals)   vertexSize += 3;
@@ -54,8 +58,8 @@ public static class Cylinder
 
                 if (config.HasUV)
                 {
-                    vertices[vertexOffset++] = config.StretchTexture ? u : u * size.X;
-                    vertices[vertexOffset++] = config.StretchTexture ? v : v * size.Y;
+                    vertices[vertexOffset++] = config.StretchTexture ? u : u * uWrapScale;
+                    vertices[vertexOffset++] = config.StretchTexture ? v : v * vWorldScale;
                 }
 
                 if (config.HasNormalMap)

@@ -16,6 +16,11 @@ public static class Torus
         float radiusX = 0.5f * size.X;
         float radiusZ = 0.5f * size.Z;
         float radiusY = 0.5f * size.Y;
+        float averageMajorRadius = 0.5f * (radiusX + radiusZ);
+        float uWorldScale = 2f * MathF.PI * averageMajorRadius;
+        float uWrapScale = MathF.Max(1f, MathF.Round(uWorldScale));
+        float vWorldScale = 2f * MathF.PI * radiusY;
+        float vWrapScale = MathF.Max(1f, MathF.Round(vWorldScale));
 
         int vertexSize = 3;
         if (config.HasNormals)   vertexSize += 3;
@@ -57,8 +62,8 @@ public static class Torus
 
                 if (config.HasUV)
                 {
-                    vertices[vertexOffset++] = config.StretchTexture ? u : u * size.X;
-                    vertices[vertexOffset++] = config.StretchTexture ? v : v * size.Y;
+                    vertices[vertexOffset++] = config.StretchTexture ? u : u * uWrapScale;
+                    vertices[vertexOffset++] = config.StretchTexture ? v : v * vWrapScale;
                 }
 
                 if (config.HasNormalMap)

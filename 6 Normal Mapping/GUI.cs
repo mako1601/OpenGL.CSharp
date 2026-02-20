@@ -74,7 +74,7 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene)
         ImGuiNET.ImGui.SliderFloat("Shininess", ref shininess, 8f, 256f);
         ImGuiNET.ImGui.SliderFloat3("Ambient", ref ambient, 0f, 0.2f);
         ImGuiNET.ImGui.SliderFloat3("Diffuse", ref diffuse, 0f, 3f);
-        ImGuiNET.ImGui.SliderFloat3("Color", ref color, 0f, 10f);
+        ImGuiNET.ImGui.SliderFloat3("Color", ref color, 0f, 1f);
         ImGuiNET.ImGui.SliderFloat("SpecularStrength", ref specularStrength, 0f, 2.5f);
 
         ImGuiNET.ImGui.End();

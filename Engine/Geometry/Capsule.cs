@@ -18,6 +18,11 @@ public static class Capsule
         float minRadius = MathF.Min(radiusX, radiusZ);
         float cylinderHeight = MathF.Max(0, size.Y - 2 * minRadius);
         float halfCylinderHeight = cylinderHeight * 0.5f;
+        float averageRadius = 0.5f * (radiusX + radiusZ);
+        float uWorldScale = 2f * MathF.PI * averageRadius;
+        float uWrapScale = MathF.Max(1f, MathF.Round(uWorldScale));
+        float hemisphereArcLength = 0.5f * MathF.PI * minRadius;
+        float vWorldScale = cylinderHeight + 2f * hemisphereArcLength;
 
         int vertexSize = 3;
         if (config.HasNormals)   vertexSize += 3;
@@ -31,11 +36,6 @@ public static class Capsule
         float[] vertices = new float[totalVertexCount * vertexSize];
         uint[] indices = new uint[config.Slices * (config.Stacks / 2) * 6 * 3];
 
-        float hemisphereHeight = minRadius;
-        float totalHeight = 2 * hemisphereHeight + cylinderHeight;
-        float vHemisphere = hemisphereHeight / totalHeight;
-        float vCylinder = cylinderHeight / totalHeight;
-
         int vertexOffset = 0;
         int indexOffset = 0;
 
@@ -48,9 +48,10 @@ public static class Capsule
             radiusZ,
             halfCylinderHeight,
             config,
-            vHemisphere,
-            vCylinder,
-            size
+            hemisphereArcLength,
+            cylinderHeight,
+            vWorldScale,
+            uWrapScale
         );
 
         uint vertexIndex = (uint)cylinderVertexCount;
@@ -64,9 +65,10 @@ public static class Capsule
             minRadius,
             halfCylinderHeight,
             config,
-            vHemisphere,
-            vCylinder,
-            size,
+            hemisphereArcLength,
+            cylinderHeight,
+            vWorldScale,
+            uWrapScale,
             1f,
             ref vertexIndex
         );
@@ -81,9 +83,10 @@ public static class Capsule
             minRadius,
             halfCylinderHeight,
             config,
-            vHemisphere,
-            vCylinder,
-            size,
+            hemisphereArcLength,
+            cylinderHeight,
+            vWorldScale,
+            uWrapScale,
             -1f,
             ref vertexIndex
         );
@@ -100,9 +103,10 @@ public static class Capsule
         float radiusZ,
         float halfCylinderHeight,
         MeshPrimitiveConfig confing,
-        float vHemisphere,
-        float vCylinder,
-        Vector3 size
+        float hemisphereArcLength,
+        float cylinderHeight,
+        float vWorldScale,
+        float uWorldScale
     )
     {
         for (int stack = 0; stack <= confing.Stacks / 2; stack++)
@@ -129,9 +133,10 @@ public static class Capsule
 
                 if (confing.HasUV)
                 {
-                    float v = vHemisphere + vCylinder + vHemisphere * stack / (confing.Stacks / 2);
-                    vertices[vertexOffset++] = confing.StretchTexture ? u : u * size.X;
-                    vertices[vertexOffset++] = confing.StretchTexture ? v : v * size.Y;
+                    float uvStackProgress = (float)stack / (confing.Stacks / 2);
+                    float vNorm = (hemisphereArcLength + uvStackProgress * cylinderHeight) / vWorldScale;
+                    vertices[vertexOffset++] = confing.StretchTexture ? u : u * uWorldScale;
+                    vertices[vertexOffset++] = confing.StretchTexture ? vNorm : vNorm * vWorldScale;
                 }
 
                 if (confing.HasNormalMap)
@@ -176,9 +181,10 @@ public static class Capsule
         float minRadius,
         float halfCylinderHeight,
         MeshPrimitiveConfig confing,
-        float vHemisphere,
-        float vCylinder,
-        Vector3 size,
+        float hemisphereArcLength,
+        float cylinderHeight,
+        float vWorldScale,
+        float uWorldScale,
         float direction,
         ref uint vertexIndex
     )
@@ -212,11 +218,12 @@ public static class Capsule
                 if (confing.HasUV)
                 {
                     float u = slice * (1f / confing.Slices);
-                    float v = direction > 0
-                        ? vHemisphere + vCylinder - vHemisphere * stack * (1f / (confing.Stacks / 2))
-                        : vHemisphere + vCylinder + vHemisphere * stack * (1f / (confing.Stacks / 2));
-                    vertices[vertexOffset++] = confing.StretchTexture ? u : u * size.X;
-                    vertices[vertexOffset++] = confing.StretchTexture ? v : v * size.Y;
+                    float stackProgress = (float)stack / (confing.Stacks / 2);
+                    float vNorm = direction > 0f
+                        ? hemisphereArcLength * (1f - stackProgress) / vWorldScale
+                        : (hemisphereArcLength + cylinderHeight + hemisphereArcLength * stackProgress) / vWorldScale;
+                    vertices[vertexOffset++] = confing.StretchTexture ? u : u * uWorldScale;
+                    vertices[vertexOffset++] = confing.StretchTexture ? vNorm : vNorm * vWorldScale;
 
                 }
 

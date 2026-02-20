@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Engine;
 using Engine.Geometry;
 using Engine.Graphics;
 using Silk.NET.OpenGL;
@@ -36,14 +37,15 @@ public sealed class Scene : IDisposable
             new VertexAttributeDescription(1, 2, VertexAttribPointerType.Float, 5, 3)
         );
 
-        _cubeMaterial = MaterialLoader.Load(gl, "TextureCube");
+        _cubeMaterial = MaterialLoader.Load(gl, "BrickWall");
     }
 
-    public void Draw(GL gl, Engine.Camera camera)
+    public void Draw(GL gl, Camera camera)
     {
         gl.ClearColor(System.Drawing.Color.Wheat);
         gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
+        _materialContext.Set("Model", Matrix4x4.Identity);
         _materialContext.Set("View", camera.GetViewMatrix());
         _materialContext.Set("Projection", camera.GetProjectionMatrix());
 

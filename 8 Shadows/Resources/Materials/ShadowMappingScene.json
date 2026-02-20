@@ -1,0 +1,26 @@
+{
+  "shader": {
+    "vertex": "shadow_mapping.glslv",
+    "fragment": "shadow_mapping.glslf"
+  },
+  "textures": [
+    {
+      "uniform": "diffuseTexture",
+      "file": "Debug/blend_light.png",
+      "slot": 0
+    }
+  ],
+  "ints": {
+    "uShadowMap": 1
+  },
+  "semantics": {
+    "uView": "View",
+    "uProjection": "Projection",
+    "uViewPosition": "ViewPosition",
+    "uLightPosition": "LightPosition",
+    "uLightSpaceMatrix": "LightSpaceMatrix"
+  },
+  "properties": {
+    "Model": "uModel"
+  }
+}

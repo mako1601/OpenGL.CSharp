@@ -31,7 +31,7 @@ void main() {
     vec3 normal = texture(uMaterial.normal, fs_in.TexCoords).rgb;
     // transform normal vector to range [-1,1]
     normal = normalize(normal * 2.0 - 1.0);  // this normal is in tangent space
-   
+
     // get diffuse color
     vec3 color = pow(texture(uMaterial.diffuse, fs_in.TexCoords).rgb, vec3(2.2));
 
@@ -50,5 +50,5 @@ void main() {
     vec3 specular = uLight.color * spec * uLight.specularStrength;
 
     // result
-    fColor = vec4(pow(ambient + diffuse + specular, vec3(1.0/2.2)), 1.0);
+    fColor = vec4(pow(ambient + diffuse + specular, vec3(1.0 / 2.2)), 1.0);
 }

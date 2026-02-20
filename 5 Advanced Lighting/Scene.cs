@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Engine;
 using Engine.Geometry;
 using Engine.Graphics;
 using Silk.NET.OpenGL;
@@ -62,8 +63,8 @@ public sealed class Scene : IDisposable
             new VertexAttributeDescription(2, 2, VertexAttribPointerType.Float, 8, 6)
         );
 
-        _lightMaterial = MaterialLoader.Load(gl, "FlatColor");
-        _planeMaterial = MaterialLoader.Load(gl, "AdvancedLightingPlane");
+        _lightMaterial = MaterialLoader.Load(gl, "FlatColor3");
+        _planeMaterial = MaterialLoader.Load(gl, "BrickWallBlinnPhong_GammaCorrection");
     }
 
     public void Update(float deltaTime)
@@ -74,7 +75,7 @@ public sealed class Scene : IDisposable
         }
     }
 
-    public void Draw(GL gl, Engine.Camera camera, double time)
+    public void Draw(GL gl, Camera camera)
     {
         gl.ClearColor(System.Drawing.Color.Black);
         gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -83,6 +84,7 @@ public sealed class Scene : IDisposable
         _lightModel *= Matrix4x4.CreateTranslation(0f, 2.1f + 2f * MathF.Cos(_simulatedTime), 0f);
         _lightModel *= Matrix4x4.CreateRotationY(_simulatedTime, new Vector3(0.5f));
 
+        _materialContext.Set("Model", Matrix4x4.Identity);
         _materialContext.Set("View", camera.GetViewMatrix());
         _materialContext.Set("Projection", camera.GetProjectionMatrix());
         _materialContext.Set("CameraPosition", camera.Position);

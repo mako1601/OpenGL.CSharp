@@ -1,0 +1,32 @@
+﻿{
+  "shader": {
+    "vertex": "base_light.glslv",
+    "fragment": "blinn-phong_and_gamma_correction.glslf"
+  },
+  "textures": [
+    {
+      "uniform": "uMaterial.diffuse",
+      "file": "brickwall.jpg",
+      "slot": 0
+    }
+  ],
+  "floats": {
+    "uMaterial.shininess": 64.0,
+    "uGamma": 2.2
+  },
+  "bools": {
+    "uBlinnPhong": true
+  },
+  "semantics": {
+    "uModel": "Model",
+    "uView": "View",
+    "uProjection": "Projection",
+    "uViewPosition": "CameraPosition",
+    "uLight.position": "LightPosition"
+  },
+  "properties": {
+    "Shininess": "uMaterial.shininess",
+    "Gamma": "uGamma",
+    "UseBlinnPhong": "uBlinnPhong"
+  }
+}

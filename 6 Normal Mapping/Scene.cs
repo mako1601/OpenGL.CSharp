@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Engine;
 using Engine.Geometry;
 using Engine.Graphics;
 using Silk.NET.OpenGL;
@@ -61,11 +62,13 @@ public sealed class Scene : IDisposable
             new VertexAttributeDescription(4, 3, VertexAttribPointerType.Float, 14, 11)
         );
 
-        _lightMaterial = MaterialLoader.Load(gl, "FlatColor");
-        _planeMaterial = MaterialLoader.Load(gl, "BrickWall");
+        _lightMaterial = MaterialLoader.Load(gl, "FlatColor3");
+        _planeMaterial = MaterialLoader.Load(gl, "BrickWallNormal");
+        _lightMaterial.Set("uColor", new Vector3(1.0f, 0.8f, 0.45f));
+        _planeMaterial.Set("uLight.color", new Vector3(1.0f, 0.8f, 0.45f));
     }
 
-    public void Draw(GL gl, Engine.Camera camera, double time)
+    public void Draw(GL gl, Camera camera, double time)
     {
         gl.ClearColor(System.Drawing.Color.Black);
         gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -83,7 +86,10 @@ public sealed class Scene : IDisposable
         lightModel *= Matrix4x4.CreateScale(0.2f);
         lightModel *= Matrix4x4.CreateTranslation(lightPos);
 
-        UpdateFrameContext(camera, lightPos);
+        _materialContext.Set("View", camera.GetViewMatrix());
+        _materialContext.Set("Projection", camera.GetProjectionMatrix());
+        _materialContext.Set("CameraPosition", camera.Position);
+        _materialContext.Set("LightPosition", lightPos);
 
         _lightMesh.Bind();
         _lightBlock.Set("uModel", lightModel);
@@ -95,14 +101,6 @@ public sealed class Scene : IDisposable
         _planeMaterial.Apply(_materialContext);
         _planeMesh.Draw(gl);
         _planeMesh.Unbind();
-    }
-
-    private void UpdateFrameContext(Engine.Camera camera, Vector3 lightPos)
-    {
-        _materialContext.Set("View", camera.GetViewMatrix());
-        _materialContext.Set("Projection", camera.GetProjectionMatrix());
-        _materialContext.Set("CameraPosition", camera.Position);
-        _materialContext.Set("LightPosition", lightPos);
     }
 
     public void Dispose()

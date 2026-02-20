@@ -12,6 +12,10 @@ public static class Sphere
         }
 
         config ??= new MeshPrimitiveConfig();
+        float averageRadiusXZ = 0.5f * (size.X + size.Z);
+        float uWorldScale = 2f * MathF.PI * averageRadiusXZ;
+        float uWrapScale = MathF.Max(1f, MathF.Round(uWorldScale));
+        float vWorldScale = MathF.PI * size.Y;
 
         int vertexSize = 3;
         if (config.HasNormals)   vertexSize += 3;
@@ -57,8 +61,8 @@ public static class Sphere
 
                 if (config.HasUV)
                 {
-                    vertices[vertexOffset++] = config.StretchTexture ? u : u * size.X;
-                    vertices[vertexOffset++] = config.StretchTexture ? v : v * size.Y;
+                    vertices[vertexOffset++] = config.StretchTexture ? u : u * uWrapScale;
+                    vertices[vertexOffset++] = config.StretchTexture ? v : v * vWorldScale;
                 }
 
                 if (config.HasNormalMap)

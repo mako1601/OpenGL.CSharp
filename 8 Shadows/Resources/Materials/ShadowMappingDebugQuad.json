@@ -1,0 +1,13 @@
+{
+  "shader": {
+    "vertex": "debug_quad.glslv",
+    "fragment": "debug_quad_depth.glslf"
+  },
+  "ints": {
+    "uDepthMap": 0
+  },
+  "properties": {
+    "NearPlane": "uNearPlane",
+    "FarPlane": "uFarPlane"
+  }
+}

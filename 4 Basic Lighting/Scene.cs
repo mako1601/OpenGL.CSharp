@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Engine;
 using Engine.Geometry;
 using Engine.Graphics;
 using Silk.NET.OpenGL;
@@ -11,7 +12,7 @@ public sealed class Scene : IDisposable
     [
         new(new Vector3(0f, 1f, -4.125f), 0.05f, 0.2f, 0.1f),
         new(new Vector3(0f, 1f, -1.375f), 0.25f, 0.4f, 0.3f),
-        new(new Vector3(0f, 1f,  1.375f), 0.5f, 0.6f, 0.5f),
+        new(new Vector3(0f, 1f,  1.375f), 0.50f, 0.6f, 0.5f),
         new(new Vector3(0f, 1f,  4.125f), 0.75f, 0.8f, 0.7f),
     ];
 
@@ -66,15 +67,16 @@ public sealed class Scene : IDisposable
             new VertexAttributeDescription(2, 2, VertexAttribPointerType.Float, 8, 6)
         );
 
-        _lightMaterial = MaterialLoader.Load(gl, "FlatColor");
-        _planeMaterial = MaterialLoader.Load(gl, "BasicLightingPlane");
+        _lightMaterial = MaterialLoader.Load(gl, "FlatColor3");
+        _planeMaterial = MaterialLoader.Load(gl, "BrickWallBaseLight");
     }
 
-    public void Draw(GL gl, Engine.Camera camera)
+    public void Draw(GL gl, Camera camera)
     {
         gl.ClearColor(System.Drawing.Color.Black);
         gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
+        _materialContext.Set("Model", Matrix4x4.Identity);
         _materialContext.Set("View", camera.GetViewMatrix());
         _materialContext.Set("Projection", camera.GetProjectionMatrix());
         _materialContext.Set("CameraPosition", camera.Position);

@@ -129,7 +129,7 @@ public sealed class Scene : IDisposable
             new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 3, 0)
         );
 
-        _flatMaterial = MaterialLoader.Load(gl, "FlatColor");
+        _flatMaterial = MaterialLoader.Load(gl, "FlatColor3");
 
         _planeModels = CreateArenaModels();
         _planeColors =

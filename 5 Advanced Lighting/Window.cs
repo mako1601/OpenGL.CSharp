@@ -83,7 +83,7 @@ public class Window : Engine.Window
     {
         base.OnRender(elapsedTime);
 
-        Scene?.Draw(GL, Camera, WindowState.Time);
+        Scene?.Draw(GL, Camera);
         GUI?.Render(Camera);
     }
 

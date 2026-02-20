@@ -484,3 +484,7 @@ Tests
 
 # ImGUI staff
 imgui.ini
+
+#Game Engine
+!Engine/Resources/Textures/Debug/
+!Engine/Resources/Textures/Debug/**

@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Engine;
 using Engine.Geometry;
 using Engine.Graphics;
 using Silk.NET.OpenGL;
@@ -35,14 +36,16 @@ public sealed class Scene : IDisposable
             new VertexAttributeDescription(0, 3, VertexAttribPointerType.Float, 3, 0)
         );
 
-        _cubeMaterial = MaterialLoader.Load(gl, "ColorScene");
+        _cubeMaterial = MaterialLoader.Load(gl, "FlatColor3");
     }
 
-    public void Draw(GL gl, Engine.Camera camera)
+    public void Draw(GL gl, Camera camera)
     {
         gl.ClearColor(System.Drawing.Color.Wheat);
         gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
+        _materialContext.Set("Color", new Vector3(1.0f, 0.5f, 0.2f));
+        _materialContext.Set("Model", Matrix4x4.Identity);
         _materialContext.Set("View", camera.GetViewMatrix());
         _materialContext.Set("Projection", camera.GetProjectionMatrix());
 

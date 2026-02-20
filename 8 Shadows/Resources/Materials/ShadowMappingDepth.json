@@ -1,0 +1,12 @@
+{
+  "shader": {
+    "vertex": "shadow_mapping_depth.glslv",
+    "fragment": "shadow_mapping_depth.glslf"
+  },
+  "semantics": {
+    "uLightSpaceMatrix": "LightSpaceMatrix"
+  },
+  "properties": {
+    "Model": "uModel"
+  }
+}
