@@ -2,30 +2,37 @@ using Silk.NET.OpenGL;
 
 namespace Engine.Graphics;
 
-public sealed class DepthTexture : IDisposable
+public sealed class DepthTextureArray : IDisposable
 {
-    private readonly uint _handle;
     private readonly GL _gl;
+    private readonly uint _handle;
 
     public uint Handle => _handle;
     public uint Width { get; }
     public uint Height { get; }
+    public int Layers { get; }
 
-    public unsafe DepthTexture(GL gl, uint width, uint height)
+    public unsafe DepthTextureArray(GL gl, uint width, uint height, int layers)
     {
+        if (layers <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(layers), "Layers must be > 0.");
+        }
+
         _gl = gl;
         Width = width;
         Height = height;
+        Layers = layers;
 
         _handle = _gl.GenTexture();
-        _gl.BindTexture(TextureTarget.Texture2D, _handle);
-
-        _gl.TexImage2D(
-            TextureTarget.Texture2D,
+        _gl.BindTexture(TextureTarget.Texture2DArray, _handle);
+        _gl.TexImage3D(
+            TextureTarget.Texture2DArray,
             0,
-            InternalFormat.DepthComponent,
+            InternalFormat.DepthComponent32f,
             width,
             height,
+            (uint)layers,
             0,
             PixelFormat.DepthComponent,
             PixelType.Float,
@@ -33,27 +40,27 @@ public sealed class DepthTexture : IDisposable
         );
 
         _gl.TexParameter(
-            TextureTarget.Texture2D,
+            TextureTarget.Texture2DArray,
             TextureParameterName.TextureMinFilter,
-            (int)GLEnum.Nearest
+            (int)TextureMinFilter.Nearest
         );
         _gl.TexParameter(
-            TextureTarget.Texture2D,
+            TextureTarget.Texture2DArray,
             TextureParameterName.TextureMagFilter,
-            (int)GLEnum.Nearest
+            (int)TextureMagFilter.Nearest
         );
         _gl.TexParameter(
-            TextureTarget.Texture2D,
+            TextureTarget.Texture2DArray,
             TextureParameterName.TextureWrapS,
-            (int)GLEnum.ClampToBorder
+            (int)TextureWrapMode.ClampToBorder
         );
         _gl.TexParameter(
-            TextureTarget.Texture2D,
+            TextureTarget.Texture2DArray,
             TextureParameterName.TextureWrapT,
-            (int)GLEnum.ClampToBorder
+            (int)TextureWrapMode.ClampToBorder
         );
         _gl.TexParameter(
-            TextureTarget.Texture2D,
+            TextureTarget.Texture2DArray,
             TextureParameterName.TextureBorderColor,
             [1f, 1f, 1f, 1f]
         );
@@ -62,7 +69,7 @@ public sealed class DepthTexture : IDisposable
     public void Bind(uint textureSlot = 0)
     {
         _gl.ActiveTexture((TextureUnit)((uint)TextureUnit.Texture0 + textureSlot));
-        _gl.BindTexture(TextureTarget.Texture2D, _handle);
+        _gl.BindTexture(TextureTarget.Texture2DArray, _handle);
     }
 
     public void Dispose()

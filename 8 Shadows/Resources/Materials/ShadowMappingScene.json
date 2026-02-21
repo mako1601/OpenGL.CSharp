@@ -5,20 +5,26 @@
   },
   "textures": [
     {
-      "uniform": "diffuseTexture",
+      "uniform": "uDiffuseTexture",
       "file": "Debug/blend_light.png",
       "slot": 0
     }
   ],
   "ints": {
-    "uShadowMap": 1
+    "uShadowMapArray": 1,
+    "uCascadeCount": 4,
+    "uShowCascadeColors": 0,
+    "uEnableCascadeBlend": 1
+  },
+  "floats": {
+    "uCascadeBlendRange": 1.2
   },
   "semantics": {
     "uView": "View",
+    "uCascadeView": "CascadeView",
     "uProjection": "Projection",
     "uViewPosition": "ViewPosition",
-    "uLightPosition": "LightPosition",
-    "uLightSpaceMatrix": "LightSpaceMatrix"
+    "uLightDirection": "LightDirection"
   },
   "properties": {
     "Model": "uModel"

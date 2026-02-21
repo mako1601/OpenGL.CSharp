@@ -1,6 +1,5 @@
 using System.Numerics;
 using Engine;
-using Engine.Physics.Colliders;
 using Silk.NET.Input;
 using Silk.NET.OpenGL;
 using Silk.NET.OpenGL.Extensions.ImGui;
@@ -26,7 +25,11 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene)
         if (_isDisposed || _controller == null) return;
 
         var showDepthMapDebug = _scene.ShowDepthMapDebug;
-        var lightPos = _scene.LightPos;
+        var freezeCsm = _scene.FreezeCsm;
+        var showCascadeColors = _scene.ShowCascadeColors;
+        var debugCascadeIndex = _scene.DebugCascadeIndex;
+        var sunAzimuth = _scene.SunAzimuthDeg;
+        var sunElevation = _scene.SunElevationDeg;
 
         ImGuiNET.ImGui.SetNextWindowSize(new Vector2(255, 267), ImGuiNET.ImGuiCond.FirstUseEver);
         ImGuiNET.ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiNET.ImGuiCond.FirstUseEver);
@@ -39,16 +42,28 @@ public sealed class GUI(GL gl, IWindow window, IInputContext input, Scene scene)
         ImGuiNET.ImGui.Text($"Yaw: {camera.Yaw:0.00}");
         ImGuiNET.ImGui.Text($"Pitch: {camera.Pitch:0.00}");
         ImGuiNET.ImGui.Text($"FOV: {camera.Zoom:0.00}");
-        ImGuiNET.ImGui.SeparatorText("");
+
+        ImGuiNET.ImGui.SeparatorText("Shadows");
+        ImGuiNET.ImGui.SliderFloat("Sun azimuth", ref sunAzimuth, -180f, 180f);
+        ImGuiNET.ImGui.SliderFloat("Sun elevation", ref sunElevation, -10f, 89f);
+        ImGuiNET.ImGui.Checkbox("Freeze CSM", ref freezeCsm);
         ImGuiNET.ImGui.Checkbox("Debug mode", ref showDepthMapDebug);
-        ImGuiNET.ImGui.SliderFloat3("Light position", ref lightPos, -10f, 10f);
+        if (showDepthMapDebug)
+        {
+            ImGuiNET.ImGui.SliderInt("Debug cascade", ref debugCascadeIndex, 0, Scene.MaxCascadeIndex);
+        }
+        ImGuiNET.ImGui.Checkbox("Show cascade colors", ref showCascadeColors);
 
         ImGuiNET.ImGui.End();
 
         _controller.Render();
 
         _scene.ShowDepthMapDebug = showDepthMapDebug;
-        _scene.LightPos = lightPos;
+        _scene.FreezeCsm = freezeCsm;
+        _scene.ShowCascadeColors = showCascadeColors;
+        _scene.DebugCascadeIndex = debugCascadeIndex;
+        _scene.SunAzimuthDeg = sunAzimuth;
+        _scene.SunElevationDeg = sunElevation;
     }
 
     public void Dispose()

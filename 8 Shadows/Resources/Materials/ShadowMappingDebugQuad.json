@@ -4,7 +4,8 @@
     "fragment": "debug_quad_depth.glslf"
   },
   "ints": {
-    "uDepthMap": 0
+    "uDepthMap": 0,
+    "uCascadeLayer": 0
   },
   "properties": {
     "NearPlane": "uNearPlane",

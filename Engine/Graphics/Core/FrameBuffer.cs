@@ -25,6 +25,15 @@ public sealed class FrameBuffer : IDisposable
     ) =>
         _gl.FramebufferTexture2D(target, attachment, textureTarget, textureHandle, level);
 
+    public void AttachTextureLayer(
+        FramebufferAttachment attachment,
+        uint textureHandle,
+        int layer,
+        int level = 0,
+        FramebufferTarget target = FramebufferTarget.Framebuffer
+    ) =>
+        _gl.FramebufferTextureLayer(target, attachment, textureHandle, level, layer);
+
     public void SetDrawReadBuffers(DrawBufferMode drawBufferMode, ReadBufferMode readBufferMode)
     {
         _gl.DrawBuffer(drawBufferMode);
